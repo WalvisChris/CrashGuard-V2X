@@ -19,8 +19,8 @@ from cryptography.hazmat.primitives import serialization
 from cryptography.hazmat.primitives.kdf.concatkdf import ConcatKDFHash
 from cryptography.hazmat.primitives.ciphers.aead import AESCCM
 import time
-from pyasn1.type import univ, char, namedtype, tag, useful
-from pyasn1.codec.der import decoder
+from pyasn1.type import univ, char, namedtype, tag, useful, namedval
+from pyasn1.codec.der import encoder, decoder
 import os
 
 # HeaderInfo (ASN.1)
@@ -69,8 +69,23 @@ class EncryptedData(univ.Sequence):
         namedtype.NamedType('ccmTag', univ.OctetString())
     )
 
+# Ieee1609Dot2Data (ASN.1)
+class Ieee1609Dot2Data(univ.Sequence):
+    componentType = namedtype.NamedTypes(
+        namedtype.NamedType('protocolVersion', univ.Integer()),
+        namedtype.NamedType('contentType', univ.Enumerated(
+            namedValues=namedval.NamedValues(
+                ('unsecureData', 0),
+                ('signedData', 1),
+                ('encryptedData', 2)
+            )
+        )),
+        namedtype.NamedType('content', univ.OctetString())
+    )
+
 def demoLog(step:str, output:str) -> None:
-    print(f"[\033[36m{step}\033[0m] {output}")
+    print(f"\n[\033[36m{step}\033[0m]:\n{output}")
+
 os.system('cls')
 
 # 1. V2X payload
@@ -83,7 +98,6 @@ demoLog("Hashing", digest)
 
 # 3. Signing
 private_key = ec.generate_private_key(ec.SECP256R1())   # maak private key ECDSA (p-256)
-demoLog("Signign: private key", private_key)
 
 der_signature = private_key.sign(   # sign payload met ECDSA en private key (niet digest!)
     payload,
@@ -144,6 +158,8 @@ receiver_public_key = receiver_private_key.public_key()
 ephemeral_private_key = ec.generate_private_key(ec.SECP256R1())
 ephemeral_public_key = ephemeral_private_key.public_key()
 
+demoLog("Encryption: ephermeral key", ephemeral_public_key.public_bytes(encoding=serialization.Encoding.DER, format=serialization.PublicFormat.SubjectPublicKeyInfo).hex())
+
 shared_secret = ephemeral_private_key.exchange(ec.ECDH(), receiver_public_key)
 
 ckdf = ConcatKDFHash(algorithm=hashes.SHA256(), length=16, otherinfo=None)
@@ -151,11 +167,42 @@ aes_key = ckdf.derive(shared_secret)
 
 aesccm = AESCCM(aes_key, tag_length=16)
 nonce = os.urandom(13)
-ciphertext = aesccm.encrypt(nonce, payload, associated_data=None)
+ciphertext_and_tag = aesccm.encrypt(nonce, payload, associated_data=None)
 
-demoLog("Encryption", ephemeral_public_key.public_bytes(encoding=serialization.Encoding.DER, format=serialization.PublicFormat.SubjectPublicKeyInfo).hex())
+ciphertext = ciphertext_and_tag[:-16]
+ccm_tag = ciphertext_and_tag[-16:]
+
+demoLog("Encryption: ciphertext", ciphertext.hex())
+demoLog("Encryptio: CCM Tag", ccm_tag.hex())
 
 # 8. EncryptedData
+ccm_tag = ciphertext[-16:]
+ephemeral_pub_bytes = ephemeral_public_key.public_bytes(
+    encoding=serialization.Encoding.DER,
+    format=serialization.PublicFormat.SubjectPublicKeyInfo
+)
 
+recipient = RecipientInfo()
+recipient.setComponentByName('recipientID', 'receiver01')   # test vehicle voor demo
+recipient.setComponentByName('ephemeralKey', ephemeral_pub_bytes)
+
+recipients_seq = univ.SequenceOf(componentType=RecipientInfo())
+recipients_seq.append(recipient)
+
+enc_data = EncryptedData()
+enc_data.setComponentByName('recipients', recipients_seq)
+enc_data.setComponentByName('ciphertext', ciphertext)
+enc_data.setComponentByName('nonce', nonce)
+enc_data.setComponentByName('ccmTag', ccm_tag)
+
+encoded_encrypted_data = encoder.encode(enc_data)
+demoLog("Encrypted Data", encoded_encrypted_data.hex())
 
 # 9. Ieee1609Dot2Data
+ieee_data_encrypted = Ieee1609Dot2Data()
+ieee_data_encrypted.setComponentByName('protocolVersion', 3)
+ieee_data_encrypted.setComponentByName('contentType', 2)   # 2 = encryptedData
+ieee_data_encrypted.setComponentByName('content', encoded_encrypted_data)
+
+final_message_signed = encoder.encode(ieee_data_encrypted)
+demoLog("Final", final_message_signed.hex())
