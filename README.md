@@ -1,10 +1,13 @@
+# TODO  
+- geen fake certificate maar echte certificates maken.  
+
 # CrashGuard V2X  
 creating C-ITS V2X communication using WAVE standard (IEEE 1609.2). Includes:
 - ASN.1 formatting
 - Public Key Infrastructure
 - Hashing
 - Symmetrical encryption
-- ECDSA (p-256) key generation
+- ECDSA (p-256) key generation  
 
 ...using **Python**  
 
@@ -24,3 +27,10 @@ creating C-ITS V2X communication using WAVE standard (IEEE 1609.2). Includes:
 2. Decode Ieee1609Dot2Data  
 3. Decode content type  
 4. Decrypt encrypted data  
+
+# Scalability & key management  
+## Hierarchy  
+- Root CA: ultimate trusted authority.  
+- Enrollment CA: issues long-term enrollment certificates to vehicles.  
+- Pseudonym CA: issues short-term certificates (pseudonyms) for vehicles.  
+- Misbehaviour Authority: receives reports of misbehaving vehicles and can revoke certificates.  
