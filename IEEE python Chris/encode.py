@@ -15,6 +15,7 @@ from hashlib import sha256
 from cryptography.hazmat.primitives.asymmetric import ec
 from cryptography.hazmat.primitives import hashes
 from cryptography.hazmat.primitives.asymmetric.utils import decode_dss_signature
+from cryptography.hazmat.primitives.serialization import load_der_public_key, load_pem_private_key
 from cryptography.hazmat.primitives import serialization
 from cryptography.hazmat.primitives.kdf.concatkdf import ConcatKDFHash
 from cryptography.hazmat.primitives.ciphers.aead import AESCCM
@@ -98,9 +99,10 @@ def encode_message() -> None:
     demoLog("Hashing", digest)
 
     # 3. Signing
-    private_key = ec.generate_private_key(ec.SECP256R1())   # maak private key ECDSA (p-256)
+    with open("IEEE python Chris/sender_private_key.pem", "rb") as f:   # get sender private key
+        sender_private_key = serialization.load_pem_private_key(f.read(), password=None)
 
-    der_signature = private_key.sign(   # sign payload met ECDSA en private key (niet digest!)
+    der_signature = sender_private_key.sign(   # sign payload met ECDSA en private key (niet digest!)
         payload,
         ec.ECDSA(hashes.SHA256())       # signing functie geeft zelf hashing functie mee (SHA256)
     )
@@ -123,7 +125,7 @@ def encode_message() -> None:
     tbs.setComponentByName('payload', payload)
     tbs.setComponentByName('headerInfo', header)
 
-    public_bytes = private_key.public_key().public_bytes(       # public key naar bytes voor ASN.1
+    public_bytes = sender_private_key.public_key().public_bytes(       # public key naar bytes voor ASN.1
         encoding=serialization.Encoding.DER,
         format=serialization.PublicFormat.SubjectPublicKeyInfo
     )
@@ -153,13 +155,15 @@ def encode_message() -> None:
     4. versleutel payload met AES-CCM
     5. verzend ciphertext, nonce, tag + ephemeral public key naar ontvanger
     """
-    receiver_private_key = ec.generate_private_key(ec.SECP256R1())
-    receiver_public_key = receiver_private_key.public_key()
 
     ephemeral_private_key = ec.generate_private_key(ec.SECP256R1())
     ephemeral_public_key = ephemeral_private_key.public_key()
 
     demoLog("Encryption: ephermeral key", ephemeral_public_key.public_bytes(encoding=serialization.Encoding.DER, format=serialization.PublicFormat.SubjectPublicKeyInfo).hex())
+
+    with open("IEEE python Chris/receiver_private_key.pem", "rb") as f:     # get receiver public key
+        receiver_private_key = serialization.load_pem_private_key(f.read(), password=None)
+    receiver_public_key = receiver_private_key.public_key()
 
     shared_secret = ephemeral_private_key.exchange(ec.ECDH(), receiver_public_key)
 
@@ -168,8 +172,8 @@ def encode_message() -> None:
 
     aesccm = AESCCM(aes_key, tag_length=16)
     nonce = os.urandom(13)
-    ciphertext_and_tag = aesccm.encrypt(nonce, payload, associated_data=None)
 
+    ciphertext_and_tag = aesccm.encrypt(nonce, payload, associated_data=None)
     ciphertext = ciphertext_and_tag[:-16]
     ccm_tag = ciphertext_and_tag[-16:]
 
@@ -177,7 +181,6 @@ def encode_message() -> None:
     demoLog("Encryptio: CCM Tag", ccm_tag.hex())
 
     # 8. EncryptedData
-    ccm_tag = ciphertext[-16:]
     ephemeral_pub_bytes = ephemeral_public_key.public_bytes(
         encoding=serialization.Encoding.DER,
         format=serialization.PublicFormat.SubjectPublicKeyInfo
@@ -209,8 +212,8 @@ def encode_message() -> None:
     demoLog("Final", final_message_signed.hex())
 
     # final message exporteren voor decoding
-    with open("IEEE python Chris/signed_msg.txt", "w") as f:
-        f.write(final_message_signed.hex())
+    with open("IEEE python Chris/signed_msg.txt", "wb") as f:
+        f.write(final_message_signed)
 
 if __name__ == "__main__":
     encode_message()
