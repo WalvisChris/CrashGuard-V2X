@@ -1,9 +1,12 @@
 # CrashGuard V2X  
-- C-ITS V2X  
-- IEEE 1609.2  
-- PKI  
+creating C-ITS V2X communication using WAVE standard (IEEE 1609.2). Includes:
+- ASN.1 formatting
+- Public Key Infrastructure
+- Hashing
+- Symmetrical encryption
+- ECDSA (p-256) key generation
 
-...with **Python** and **C**  
+...using **Python**  
 
 # Python Demo - WAVE encoding
 1. V2X payload  
