@@ -1,5 +1,6 @@
 # TODO  
 - geen fake certificate maar echte certificates maken.  
+- werkt TTL en de andere parameters die het veilig maken?  
 
 # CrashGuard V2X  
 creating C-ITS V2X communication using WAVE standard (IEEE 1609.2). Includes:
