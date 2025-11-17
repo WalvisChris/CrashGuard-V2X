@@ -129,13 +129,13 @@ def encode_message() -> None:
         format=serialization.PublicFormat.SubjectPublicKeyInfo
     )
 
+    demoLog("ToBeSignedData", tbs)
+
+    # 5. SignedData
     signer = SignerInfo()
     signer.setComponentByName('certID', 'testCert01')   # willekeurige certificate voor test
     signer.setComponentByName('publicKey', univ.OctetString(public_bytes))
 
-    demoLog("ToBeSignedData", tbs)
-
-    # 5. SignedData
     signed_data = SignedData()
     signed_data.setComponentByName('tbsData', tbs)
     signed_data.setComponentByName('signerInfo', signer)
@@ -155,7 +155,7 @@ def encode_message() -> None:
     5. verzend ciphertext, nonce, tag + ephemeral public key naar ontvanger
     """
 
-    ephemeral_private_key = ec.generate_private_key(ec.SECP256R1())
+    ephemeral_private_key = ec.generate_private_key(ec.SECP256R1())     # maak key
     ephemeral_public_key = ephemeral_private_key.public_key()
 
     demoLog("Encryption: ephermeral key", ephemeral_public_key.public_bytes(encoding=serialization.Encoding.DER, format=serialization.PublicFormat.SubjectPublicKeyInfo).hex())
@@ -164,7 +164,7 @@ def encode_message() -> None:
         receiver_private_key = serialization.load_pem_private_key(f.read(), password=None)
     receiver_public_key = receiver_private_key.public_key()
 
-    shared_secret = ephemeral_private_key.exchange(ec.ECDH(), receiver_public_key)
+    shared_secret = ephemeral_private_key.exchange(ec.ECDH(), receiver_public_key)      # shared secret is ephemeral key exchange met receiver public key
 
     ckdf = ConcatKDFHash(algorithm=hashes.SHA256(), length=16, otherinfo=None)
     aes_key = ckdf.derive(shared_secret)
