@@ -1,6 +1,7 @@
 # TODO  
-- geen fake certificate maar echte certificates maken.  
+- signedData en encrytedData combineren? anders signedData.  
 - werkt TTL en de andere parameters die het veilig maken?  
+- geen fake certificate maar echte certificates maken.  
 
 # CrashGuard V2X  
 creating C-ITS V2X communication using WAVE standard (IEEE 1609.2). Includes:
