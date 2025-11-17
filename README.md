@@ -33,7 +33,7 @@ creating C-ITS V2X communication using WAVE standard (IEEE 1609.2). Includes:
 4. Decrypt encrypted data  
 
 # Scalability & key management  
-## Hierarchy  
+## Hierarchy:  
 - **Root CA:** ultimate trusted authority.  
 - **Enrollment CA:** issues long-term enrollment certificates to vehicles.  
 - **Pseudonym CA:** issues short-term certificates (pseudonyms) for vehicles.  
