@@ -39,7 +39,7 @@ creating C-ITS V2X communication using WAVE standard (IEEE 1609.2). Includes:
 - **Pseudonym CA:** issues short-term certificates (pseudonyms) for vehicles.  
 - **Misbehaviour Authority:** receives reports of misbehaving vehicles and can revoke certificates.  
 
-# Python / MicroPyhon Demo's  
+# Python / MicroPython Demo's  
 - Main demo (python)  
 - M5StickC plus 2 (microPython)  
 - EV3 (microPython)  
