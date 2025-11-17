@@ -38,3 +38,9 @@ creating C-ITS V2X communication using WAVE standard (IEEE 1609.2). Includes:
 - **Enrollment CA:** issues long-term enrollment certificates to vehicles.  
 - **Pseudonym CA:** issues short-term certificates (pseudonyms) for vehicles.  
 - **Misbehaviour Authority:** receives reports of misbehaving vehicles and can revoke certificates.  
+
+# Python / MicroPyhon Demo's  
+- Main demo (python)  
+- M5StickC plus 2 (microPython)  
+- EV3 (microPython)  
+- ESP32-C3 PICO (microPython)  
