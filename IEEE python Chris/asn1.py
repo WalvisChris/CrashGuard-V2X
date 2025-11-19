@@ -53,8 +53,18 @@ class Ieee1609Dot2Data(univ.Sequence):
             namedValues=namedval.NamedValues(
                 ('unsecureData', 0),
                 ('signedData', 1),
-                ('encryptedData', 2)
+                ('encryptedData', 2),
+                ('envelopedData', 3)
             )
         )),
         namedtype.NamedType('content', univ.OctetString())
+    )
+
+# EnvelopedData (ASN.1)
+class EnvelopedData(univ.Sequence):
+    componentType = namedtype.NamedTypes(
+        namedtype.NamedType('recipients', univ.SequenceOf(componentType=RecipientInfo())),
+        namedtype.NamedType('encryptedContent', univ.OctetString()),
+        namedtype.NamedType('nonce', univ.OctetString()),
+        namedtype.NamedType('ccmTag', univ.OctetString())
     )

@@ -1,0 +1,13 @@
+## [2.0] - 2025/11/19  
+- added "EnvelopedData" ASN.1 structure which combines "SignedData" and "EncryptedData".  
+- removed Public Key Infrasturcture and added GROUP_KEY for scalability.  
+- code cleanup.  
+
+## [1.1] - 2025/11/15  
+- added WAVE message decoding.  
+
+## [1.0] - 2025/11/14  
+- added WAVE message encoding  
+    - added Public Key Infrastructure to encrypt data.  
+    - added neccessary ASN.1 structures: HeaderInfo, ToBeSignedData, SignerInfo, SignedData, RecipientInfo, EncryptedData, Ieee1609Dot2Data.  
+- first release.  
