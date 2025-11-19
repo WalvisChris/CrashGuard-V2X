@@ -6,7 +6,7 @@ from cryptography.hazmat.primitives.kdf.concatkdf import ConcatKDFHash
 from cryptography.hazmat.primitives.ciphers.aead import AESCCM
 from pyasn1.type import univ
 from pyasn1.codec.der import encoder
-from asn1 import HeaderInfo, ToBeSignedData, SignerInfo, SignedData, RecipientInfo, EncryptedData, Ieee1609Dot2Data
+from asn1 import HeaderInfo, ToBeSignedData, SignerInfo, SignedData, RecipientInfo, EncryptedData, Ieee1609Dot2Data, EnvelopedData
 import time
 import os
 
@@ -48,41 +48,44 @@ def encode_message() -> None:
     signed_data.setComponentByName('signatureValue', b'placeholder_signature')
 
     demoLog("SignedData", signed_data)
+
+    # --- 5. Serialiseer SignedData ---
+    signed_bytes = encoder.encode(signed_data)
     
-    # --- 5. Encryption ---
+    # --- 6. Encryption ---
     with open("keys/group_key.bin", "rb") as f:
         GROUP_KEY = f.read()
     NONCE = os.urandom(13)
 
     aesccm = AESCCM(GROUP_KEY, tag_length=16)
-    ciphertext_and_tag = aesccm.encrypt(NONCE, payload, associated_data=None)
+    ciphertext_and_tag = aesccm.encrypt(NONCE, signed_bytes, associated_data=None)
     ciphertext = ciphertext_and_tag[:-16]
     ccm_tag = ciphertext_and_tag[-16:]
 
     demoLog("ciphertext", ciphertext)
 
-    # --- 6. EncryptedData ---
+    # --- 7. EnvelopedData ---
     recipient = RecipientInfo()
     recipient.setComponentByName('recipientID', 'group_01')
 
     recipients_seq = univ.SequenceOf(componentType=RecipientInfo())
     recipients_seq.append(recipient)
 
-    enc_data = EncryptedData()
-    enc_data.setComponentByName('recipients', recipients_seq)
-    enc_data.setComponentByName('ciphertext', ciphertext)
-    enc_data.setComponentByName('nonce', NONCE)
-    enc_data.setComponentByName('ccmTag', ccm_tag)
+    enveloped = EnvelopedData()
+    enveloped.setComponentByName('recipients', recipients_seq)
+    enveloped.setComponentByName('encryptedContent', ciphertext)
+    enveloped.setComponentByName('nonce', NONCE)
+    enveloped.setComponentByName('ccmTag', ccm_tag)
 
-    encoded_encrypted_data = encoder.encode(enc_data)   # ASN.1 encoding
+    encoded_enveloped = encoder.encode(enveloped)   # ASN.1 encoding
 
-    demoLog("EncryptedData", enc_data)
+    demoLog("EnvelopedData", enveloped)
 
-    # --- 7. Ieee1609Dot2Data ---
+    # --- 8. Ieee1609Dot2Data ---
     ieee_data_encrypted = Ieee1609Dot2Data()
     ieee_data_encrypted.setComponentByName('protocolVersion', 3)
-    ieee_data_encrypted.setComponentByName('contentType', 2) # encryptedData
-    ieee_data_encrypted.setComponentByName('content', encoded_encrypted_data)
+    ieee_data_encrypted.setComponentByName('contentType', 3) # envelopedData
+    ieee_data_encrypted.setComponentByName('content', encoded_enveloped)
 
     final_message = encoder.encode(ieee_data_encrypted) # ASN.1 encoding
 
