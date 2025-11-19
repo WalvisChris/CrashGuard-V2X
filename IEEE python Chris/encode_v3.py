@@ -13,14 +13,18 @@ import os
 def demoLog(step:str, output:str) -> None:
     print(f"\n[\033[36m{step}\033[0m]:\n{output}")
 
-def encode_message() -> None:
+def getContentType() -> int:
+    c = int(input("Select content type:\n0. unsecure\n1. signed\n2. encryted\n3. enveloped\n> "))
+    return c
+
+def encode_message(contentType:int = 0) -> None:
     
-    # --- 1. V2X payload ---
+    # --- V2X payload ---
     payload = b"ik ben een pijlwagen"
 
     demoLog("V2X payload", payload)
 
-    # --- 2. Header ---
+    # --- Header ---
     GENERATION_TIME = int(time.time() * 1_000_000)
 
     header = HeaderInfo()
@@ -30,71 +34,103 @@ def encode_message() -> None:
 
     demoLog("HeaderInfo", header)
 
-    # --- 3. ToBeSignedData ---
+    # --- ToBeSignedData ---
     tbs = ToBeSignedData()
     tbs.setComponentByName('payload', payload)
     tbs.setComponentByName('headerInfo', header)
 
     demoLog("ToBeSignedData", tbs)
 
-    # --- 4. SignedData ---
-    signer = SignerInfo()
-    signer.setComponentByName('certID', 'pijlwagenCert01')
-    signer.setComponentByName('publicKey', b'placeholder_pubkey')
+    # --- SignedData ---
+    if contentType in (1, 3):   # signedData of envelopedData
+        signer = SignerInfo()
+        signer.setComponentByName('certID', 'pijlwagenCert01')
+        signer.setComponentByName('publicKey', b'placeholder_pubkey')
 
-    signed_data = SignedData()
-    signed_data.setComponentByName('tbsData', tbs)
-    signed_data.setComponentByName('signerInfo', signer)
-    signed_data.setComponentByName('signatureValue', b'placeholder_signature')
+        signed_data = SignedData()
+        signed_data.setComponentByName('tbsData', tbs)
+        signed_data.setComponentByName('signerInfo', signer)
+        signed_data.setComponentByName('signatureValue', b'placeholder_signature')
 
-    demoLog("SignedData", signed_data)
+        demoLog("SignedData", signed_data)
 
-    # --- 5. Serialiseer SignedData ---
-    signed_bytes = encoder.encode(signed_data)
+    # --- Content afhankelijk van contentType ---
+    if contentType == 0:    # unsecureData
+        content_bytes = payload
+
+    elif contentType == 1:  # signedData
+        content_bytes = encoder.encode(signed_data)
+
+    elif contentType == 2:  # encryptedData
+        # AES-CCM encryptie van payload
+        with open("keys/group_key.bin", "rb") as f:
+            GROUP_KEY = f.read()
+        NONCE = os.urandom(13)
+        aesccm = AESCCM(GROUP_KEY, tag_length=16)
+        ciphertext_and_tag = aesccm.encrypt(NONCE, payload, associated_data=None)
+        ciphertext = ciphertext_and_tag[:-16]
+        ccm_tag = ciphertext_and_tag[-16:]
+
+        demoLog("ciphertext", ciphertext)
+
+        # EncryptedData ASN.1
+        recipient = RecipientInfo()
+        recipient.setComponentByName('recipientID', 'group_01')
+        recipients_seq = univ.SequenceOf(componentType=RecipientInfo())
+        recipients_seq.append(recipient)
+
+        enc_data = EncryptedData()
+        enc_data.setComponentByName('recipients', recipients_seq)
+        enc_data.setComponentByName('ciphertext', ciphertext)
+        enc_data.setComponentByName('ccmTag', ccm_tag)
+
+        content_bytes = encoder.encode(enc_data)    # ASN.1 encoding
+
+    elif contentType == 3:  # envelopedData
+        signed_bytes = encoder.encode(signed_data)
+
+        # AES-CCM encryptie van SignedData
+        with open("keys/group_key.bin", "rb") as f:
+            GROUP_KEY = f.read()
+        NONCE = os.urandom(13)
+        aesccm = AESCCM(GROUP_KEY, tag_length=16)
+        ciphertext_and_tag = aesccm.encrypt(NONCE, signed_bytes, associated_data=None)
+        ciphertext = ciphertext_and_tag[:-16]
+        ccm_tag = ciphertext_and_tag[-16:]
+
+        # EnvelopedData ASN.1
+        recipient = RecipientInfo()
+        recipient.setComponentByName('recipientID', 'group_01')
+        recipients_seq = univ.SequenceOf(componentType=RecipientInfo())
+        recipients_seq.append(recipient)
+
+        enveloped = EnvelopedData()
+        enveloped.setComponentByName('recipients', recipients_seq)
+        enveloped.setComponentByName('encryptedContent', ciphertext)
+        enveloped.setComponentByName('nonce', NONCE)
+        enveloped.setComponentByName('ccmTag', ccm_tag)
+
+        content_bytes = encoder.encode(enveloped)   # ASN.1 encoding
+
+        demoLog("EnvelopedData", enveloped)
     
-    # --- 6. Encryption ---
-    with open("keys/group_key.bin", "rb") as f:
-        GROUP_KEY = f.read()
-    NONCE = os.urandom(13)
+    else:
+        raise ValueError("Invalid contentType")
 
-    aesccm = AESCCM(GROUP_KEY, tag_length=16)
-    ciphertext_and_tag = aesccm.encrypt(NONCE, signed_bytes, associated_data=None)
-    ciphertext = ciphertext_and_tag[:-16]
-    ccm_tag = ciphertext_and_tag[-16:]
+    # --- Ieee1609Dot2Data ---
+    ieee_msg = Ieee1609Dot2Data()
+    ieee_msg.setComponentByName('protocolVersion', 3)
+    ieee_msg.setComponentByName('contentType', contentType)
+    ieee_msg.setComponentByName('content', content_bytes)
 
-    demoLog("ciphertext", ciphertext)
+    final_bytes = encoder.encode(ieee_msg)
 
-    # --- 7. EnvelopedData ---
-    recipient = RecipientInfo()
-    recipient.setComponentByName('recipientID', 'group_01')
+    demoLog("Ieee1609Dot2Data", ieee_msg)
 
-    recipients_seq = univ.SequenceOf(componentType=RecipientInfo())
-    recipients_seq.append(recipient)
-
-    enveloped = EnvelopedData()
-    enveloped.setComponentByName('recipients', recipients_seq)
-    enveloped.setComponentByName('encryptedContent', ciphertext)
-    enveloped.setComponentByName('nonce', NONCE)
-    enveloped.setComponentByName('ccmTag', ccm_tag)
-
-    encoded_enveloped = encoder.encode(enveloped)   # ASN.1 encoding
-
-    demoLog("EnvelopedData", enveloped)
-
-    # --- 8. Ieee1609Dot2Data ---
-    ieee_data_encrypted = Ieee1609Dot2Data()
-    ieee_data_encrypted.setComponentByName('protocolVersion', 3)
-    ieee_data_encrypted.setComponentByName('contentType', 3) # envelopedData
-    ieee_data_encrypted.setComponentByName('content', encoded_enveloped)
-
-    final_message = encoder.encode(ieee_data_encrypted) # ASN.1 encoding
-
-    demoLog("Ieee1609Dot2Data", ieee_data_encrypted)
-
-    # --- 8. Send message ---
+    # --- Send message ---
     with open("IEEE python Chris/signed_msg.txt", "wb") as f:
-        f.write(final_message)
+        f.write(final_bytes)
 
 if __name__ == "__main__":
     os.system('cls')
-    encode_message()
+    encode_message(getContentType())

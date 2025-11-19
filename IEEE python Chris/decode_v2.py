@@ -8,50 +8,73 @@ def demoLog(step:str, output:str) -> None:
 
 def decode_message() -> None:
     
-    # --- 1. Read message ---
+    # --- Read message ---
     with open("IEEE python Chris/signed_msg.txt", "rb") as f:
         encoded_msg = f.read()
 
-    # --- 2. Decode top-level structure ---
+    # --- Decode top-level structure ---
     ieee_msg, _ = decoder.decode(encoded_msg, asn1Spec=Ieee1609Dot2Data())  # ASN.1 decoding
-
-    if int(ieee_msg['contentType']) != 3:
-        raise ValueError("Message is not EnvelopedData")
 
     demoLog("Ieee1609Dot2Data", ieee_msg)
 
-    # --- 3. Decode EncryptedData section ---
-    enveloped_bytes = bytes(ieee_msg['content'])
-    enveloped, _ = decoder.decode(enveloped_bytes, asn1Spec=EnvelopedData())
-    demoLog("EnvelopedData", enveloped)
+    content_type = int(ieee_msg['contentType'])
+    content_bytes = bytes(ieee_msg['content'])
 
-    ciphertext = bytes(enveloped['encryptedContent'])
-    nonce = bytes(enveloped['nonce'])
-    ccm_tag = bytes(enveloped['ccmTag'])
-    ciphertext_and_tag = ciphertext + ccm_tag
+    # --- Verwerk contentType ---
+    if content_type == 0:   # unsecureData
+        payload = content_bytes
+        demoLog("Unsecure payload", payload)
 
-    demoLog("EnvelopedData", enveloped)
+    elif content_type == 1: # signedData
+        signed_data, _ = decoder.decode(content_bytes, asn1Spec=SignedData())
+        demoLog("SignedData", signed_data)
+        # TODO: signature verification
 
-    # --- 4. Read group key ---    
-    with open("keys/group_key.bin", "rb") as f:
-        GROUP_KEY = f.read()
-    aesccm = AESCCM(GROUP_KEY, tag_length=16)
+    elif content_type == 2: # encryptedData
+        enc_data, _ = decoder.decode(content_bytes)
+        ciphertext = bytes(enc_data['ciphertext'])
+        nonce = bytes(enc_data['nonce'])
+        ccm_tag = bytes(enc_data['ccmTag'])
+        ciphertext_and_tag = ciphertext + ccm_tag
 
-    # --- 5. Decrypt AES-CCM ---
-    try:
-        signed_bytes = aesccm.decrypt(nonce, ciphertext_and_tag, associated_data=None)
-        demoLog("Decrypted SignedData", signed_bytes)
-    except Exception as e:
-        demoLog("AES-CCM decryption failed", e)
-        return
+        with open("keys/group_key.bin", "rb") as f:
+            GROUP_KEY = f.read()
+        aesccm = AESCCM(GROUP_KEY, tag_length=16)
+
+        try:
+            payload = aesccm.decrypt(nonce, ciphertext_and_tag, associated_data=None)
+            demoLog("Decrypted payload", payload)
+        except Exception as e:
+            demoLog("Decryption failed", e)
     
-    # --- 6. Decode SignedData ---
-    signed_data, _ = decoder.decode(signed_bytes, asn1Spec=SignedData())
-    demoLog("SignedData", signed_data)
+    elif content_type == 3: # envelopedData
+        enveloped, _ = decoder.decode(content_bytes, asn1Spec=EnvelopedData())
+        ciphertext = bytes(enveloped['encryptedContent'])
+        nonce = bytes(enveloped['nonce'])
+        ccm_tag = bytes(enveloped['ccmTag'])
+        ciphertext_and_tag = ciphertext + ccm_tag
 
-    # --- 7. (Optioneel) signature verification ---
+        with open("keys/group_key.bin", "rb") as f:
+            GROUP_KEY = f.read()
+        aesccm = AESCCM(GROUP_KEY, tag_length=16)
 
-    # --- 8. (Optioneel) generation time verification ---
+        try:
+            signed_bytes = aesccm.decrypt(nonce, ciphertext_and_tag, associated_data=None)
+            demoLog("Decrypted SignedData bytes", signed_bytes)
+        except Exception as e:
+            demoLog("AES-CCM decryption failed", e)
+            return
+        
+        signed_data, _ = decoder.decode(signed_bytes, asn1Spec=SignedData())
+        demoLog("SignedData", signed_data)
+        # TODO: signature verification
+
+    else:
+        raise ValueError("Unknown contentType")
+
+    # --- signature verification ---
+
+    # --- generation time verification ---
 
 if __name__ == "__main__":
     os.system('cls')
