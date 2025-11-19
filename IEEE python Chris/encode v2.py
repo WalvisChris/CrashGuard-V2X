@@ -9,6 +9,9 @@ from pyasn1.codec.der import encoder
 import time
 import os
 
+def demoLog(step:str, output:str) -> None:
+    print(f"\n[\033[36m{step}\033[0m]:\n{output}")
+
 # HeaderInfo (ASN.1)
 class HeaderInfo(univ.Sequence):
     componentType = namedtype.NamedTypes(
@@ -69,12 +72,8 @@ class Ieee1609Dot2Data(univ.Sequence):
         namedtype.NamedType('content', univ.OctetString())
     )
 
-def demoLog(step:str, output:str) -> None:
-    print(f"\n[\033[36m{step}\033[0m]:\n{output}")
-
 def encode_message() -> None:
     
-    # welke data is nodig?
     with open("keys/sender_private_key.pem", "rb") as f:
         SENDER_PRIVATE_KEY = serialization.load_pem_private_key(f.read(), password=None)
 
@@ -87,41 +86,41 @@ def encode_message() -> None:
     GENERATION_TIME = int(time.time() * 1_000_000)
 
     # 1. V2X payload
-    payload = b"ik ben een pijlwagen"
+    payload = b"ik ben een pijlwagen"           # immutabele reeks bytes met exacte waarde tussen 0-255
     demoLog("V2X payload", payload)
 
     # 2. Hashing 3. Signing
-    der_signature = SENDER_PRIVATE_KEY.sign(
+    der_signature = SENDER_PRIVATE_KEY.sign(    # payload wordt gesigneerd met de PRIVATE KEY van de pijlwagen/sender
         payload,
-        ec.ECDSA(hashes.SHA256())
+        ec.ECDSA(hashes.SHA256())               # SHA256 is een hashfunctie die input omzet in unieke reeks van 256 bits
     )
 
     r, s = decode_dss_signature(der_signature)  # DER -> raw r||s volgens IEEE 1609.2
     r_bytes = r.to_bytes(32, byteorder="big")
     s_bytes = s.to_bytes(32, byteorder="big")
-    raw_signature = r_bytes + s_bytes
+    raw_signature = r_bytes + s_bytes           # signature wordt volgens WAVE opgeslagen als 2 grote integers
     demoLog("Signing: raw signature", raw_signature)
 
     # 4. ToBeSignedData
     header = HeaderInfo()
-    header.setComponentByName('psid', 0x20) # willekeurige psid voor test
-    header.setComponentByName('generationTime', GENERATION_TIME)
-    header.setComponentByName('expiryTime', GENERATION_TIME + 1_000_000) # +1 seconde
+    header.setComponentByName('psid', 0x20)                                 # een unieke ID voor de Provider Service
+    header.setComponentByName('generationTime', GENERATION_TIME)            # tijd meten waarop het bericht gegenereerd wordt
+    header.setComponentByName('expiryTime', GENERATION_TIME + 1_000_000)    # expiry tijd van bericht is 1 seconde na het genereren
 
     tbs = ToBeSignedData()
     tbs.setComponentByName('payload', payload)
     tbs.setComponentByName('headerInfo', header)
 
+    demoLog("ToBeSignedData", tbs)
+
+    # 5. SignedData
     public_bytes = SENDER_PRIVATE_KEY.public_key().public_bytes(       # public key naar bytes voor ASN.1
         encoding=serialization.Encoding.DER,
         format=serialization.PublicFormat.SubjectPublicKeyInfo
     )
 
-    demoLog("ToBeSignedData", tbs)
-
-    # 5. SignedData
     signer = SignerInfo()
-    signer.setComponentByName('certID', 'testCert01')   # willekeurige certificate voor test
+    signer.setComponentByName('certID', 'testCert01')   # willekeurig certificaat voor de demo
     signer.setComponentByName('publicKey', univ.OctetString(public_bytes))
 
     signed_data = SignedData()
