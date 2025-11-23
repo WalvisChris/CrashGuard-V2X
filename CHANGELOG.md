@@ -1,6 +1,6 @@
 ## [2.2] - 2025/11/23  
 - added corrected ASN.1 classes:
-    - *Uint8, Uint16, Uint32, Uint256, HashedData, HeaderInfo, ToBeSignedData, EcdsaP256Signature, Signature, SignerIdentifier, SignerInfo, SignedData, RecipientInfo, EncryptedData, EnvelopedData, Ieee1609Dot2Content, Ieee1609Dot2Data*  
+    - *Uint8, Uint16, Uint32, Uint256, HashedData, HeaderInfo, ToBeSignedData, EcdsaP256Signature, Signature, SignerIdentifier, SignerInfo, SignedData, RecipientInfo, EncryptedData, EnvelopedData, Ieee1609Dot2Content, Ieee1609Dot2Data*.  
 - updated encode.py accordingly.  
 - still have to update decode.py...  
 
@@ -17,8 +17,8 @@
 - added WAVE message decoding.  
 
 ## [1.0] - 2025/11/14  
-- added WAVE message encoding  
+- first release.  
+- added WAVE message encoding.  
     - added Public Key Infrastructure to encrypt data.  
     - added neccessary ASN.1 structures:
-        - *HeaderInfo, ToBeSignedData, SignerInfo, SignedData, RecipientInfo, EncryptedData, Ieee1609Dot2Data*  
-- first release.  
+        - *HeaderInfo, ToBeSignedData, SignerInfo, SignedData, RecipientInfo, EncryptedData, Ieee1609Dot2Data*.  
