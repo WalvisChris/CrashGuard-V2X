@@ -1,54 +1,110 @@
-from pyasn1.type import univ, char, namedtype, namedval
+from pyasn1.type import univ, char, namedtype, namedval, constraint
 
-# HeaderInfo (ASN.1)
-class HeaderInfo(univ.Sequence):
+# --- Basic types ---
+Uint8 = univ.Integer().subtype(subtypeSpec=constraint.ValueRangeConstraint(0, 255))
+Uint16 = univ.Integer().subtype(subtypeSpec=constraint.ValueRangeConstraint(0, 65535))
+Uint32 = univ.Integer().subtype(subtypeSpec=constraint.ValueRangeConstraint(0, 2**32-1))
+Uint256 = univ.Integer().subtype(subtypeSpec=constraint.ValueRangeConstraint(0, 2**256-1))
+
+# --- HashedData (Simplified) ---
+class HashedData(univ.Sequence):
     componentType = namedtype.NamedTypes(
-        namedtype.NamedType('psid', univ.Integer()),
-        namedtype.NamedType('generationTime', univ.Integer()),
-        namedtype.NamedType('expiryTime', univ.Integer())
+        namedtype.NamedType('hashAlgorithm', univ.ObjectIdentifier()),
+        namedtype.NamedTypes('hashedData', univ.OctetString())
     )
 
-# ToBeSignedData (ASN.1)
+# --- HeaderInfo ---
+class HeaderInfo(univ.Sequence):
+    componentType = namedtype.NamedTypes(
+        namedtype.NamedType('psid', Uint32()),
+        namedtype.NamedType('generationTime', univ.Integer()),
+        namedtype.OptionalNamedType('expiryTime', univ.Integer())
+        # TODO other optional fields
+    )
+
+# --- ToBeSignedData ---
 class ToBeSignedData(univ.Sequence):
     componentType = namedtype.NamedTypes(
         namedtype.NamedType('payload', univ.OctetString()),
-        namedtype.NamedType('headerInfo', HeaderInfo())
+        namedtype.NamedType('headerInfo', HeaderInfo()),
+        namedtype.OptionalNamedType('extDataHash', HashedData())
     )
 
-# SignerInfo (ASN.1)
+# --- EcdsaP256Signature ---
+class EcdsaP256Signature(univ.Sequence):
+    componentType = namedtype.NamedTypes(
+        namedtype.NamedTypes('r', Uint256()),
+        namedtype.NamedTypes('s', Uint256())
+    )
+
+# --- SignatureChoice (Choice) ---
+class Signature(univ.Choice):
+    componentType = namedtype.NamedTypes(
+        namedtype.NamedType('ecdsaNistP256Signature', EcdsaP256Signature())
+        # TODO other curves
+    )
+
+# --- SignerIdentifier CHOICE ---
+class SignerIdentifier(univ.Choice):
+    componentType = namedtype.NamedTypes(
+        namedtype.NamedType('certificate', univ.OctetString()),  # actual certificate bytes
+        namedtype.NamedType('digest', HashedData()),
+        namedtype.NamedType('self', univ.Null())
+    )
+
+# --- SignerInfo ---
 class SignerInfo(univ.Sequence):
     componentType = namedtype.NamedTypes(
-        namedtype.NamedType('certID', char.UTF8String()),
-        namedtype.NamedType('publicKey', univ.OctetString())
+        namedtype.NamedType('signer', SignerIdentifier()),
+        namedtype.NamedType('signature', Signature()),
+        namedtype.OptionalNamedType('extDataHash', HashedData())
     )
 
-# SignedData (ASN.1)
+# --- SignedData ---
 class SignedData(univ.Sequence):
     componentType = namedtype.NamedTypes(
         namedtype.NamedType('tbsData', ToBeSignedData()),
-        namedtype.NamedType('signerInfo', SignerInfo()),
-        namedtype.NamedType('signatureValue', univ.OctetString())
+        namedtype.NamedType('signerInfo', SignerInfo())
+        # TODO hashId
     )
 
-# RecipientInfo (ASN.1)
+# --- RecipientInfo ---
 class RecipientInfo(univ.Sequence):
     componentType = namedtype.NamedTypes(
-        namedtype.NamedType('recipientID', char.UTF8String()),
+        namedtype.NamedType('recipientID', char.UTF8String())
     )
 
-# Encrypted Data (ASN.1)
+# --- EncryptedData ---
 class EncryptedData(univ.Sequence):
     componentType = namedtype.NamedTypes(
         namedtype.NamedType('recipients', univ.SequenceOf(componentType=RecipientInfo())),
         namedtype.NamedType('ciphertext', univ.OctetString()),
-        namedtype.NamedType('nonce', univ.OctetString()),
-        namedtype.NamedType('ccmTag', univ.OctetString())
+        namedtype.NamedType('icv', univ.OctetString()),
+        namedtype.NamedType('symmAlgorithm', univ.ObjectIdentifier())
     )
 
-# Ieee1609Dot2Data (ASN.1)
+# --- EnvelopedData ---
+class EnvelopedData(univ.Sequence):
+    componentType = namedtype.NamedTypes(
+        namedtype.NamedType('recipients', univ.SequenceOf(componentType=RecipientInfo())),
+        namedtype.NamedType('encryptedContent', univ.OctetString()),
+        namedtype.NamedType('icv', univ.OctetString()),
+        namedtype.NamedType('symmAlgorithm', univ.ObjectIdentifier())
+    )
+
+# --- Ieee1609Dot2Content CHOICE ---
+class Ieee1609Dot2Content(univ.Choice):
+    componentType = namedtype.NamedTypes(
+        namedtype.NamedType('unsecuredData', univ.OctetString()),
+        namedtype.NamedType('signedData', SignedData()),
+        namedtype.NamedType('encryptedData', EncryptedData()),
+        namedtype.NamedType('envelopedData', EnvelopedData())
+    )
+
+# --- Ieee1609Dot2Data ---
 class Ieee1609Dot2Data(univ.Sequence):
     componentType = namedtype.NamedTypes(
-        namedtype.NamedType('protocolVersion', univ.Integer()),
+        namedtype.NamedType('protocolVersion', Uint8()),
         namedtype.NamedType('contentType', univ.Enumerated(
             namedValues=namedval.NamedValues(
                 ('unsecureData', 0),
@@ -57,14 +113,5 @@ class Ieee1609Dot2Data(univ.Sequence):
                 ('envelopedData', 3)
             )
         )),
-        namedtype.NamedType('content', univ.OctetString())
-    )
-
-# EnvelopedData (ASN.1)
-class EnvelopedData(univ.Sequence):
-    componentType = namedtype.NamedTypes(
-        namedtype.NamedType('recipients', univ.SequenceOf(componentType=RecipientInfo())),
-        namedtype.NamedType('encryptedContent', univ.OctetString()),
-        namedtype.NamedType('nonce', univ.OctetString()),
-        namedtype.NamedType('ccmTag', univ.OctetString())
+        namedtype.NamedType('content', Ieee1609Dot2Content())
     )

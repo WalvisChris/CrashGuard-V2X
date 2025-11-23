@@ -1,6 +1,7 @@
 *.bin
 *.pem
 *.txt
+asn1v1.py
 create_keys_v1.py
 decode_v1.py
 encode_v1.py
