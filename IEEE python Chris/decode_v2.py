@@ -3,7 +3,7 @@ from cryptography.hazmat.primitives.asymmetric import ec
 from cryptography.hazmat.primitives.ciphers.aead import AESCCM
 from cryptography.hazmat.primitives import hashes, serialization
 from pyasn1.codec.der import encoder, decoder
-from asn1 import EnvelopedData, Ieee1609Dot2Data, SignedData
+from asn1 import EnvelopedData, Ieee1609Dot2Data, SignedData, EncryptedData
 import time
 import os
 
@@ -45,7 +45,7 @@ def decode_message() -> None:
         verify_signature(signed_data, SENDER_PUBLIC_KEY)
 
     elif content_type == 2: # encryptedData
-        enc_data, _ = decoder.decode(content_bytes)
+        enc_data, _ = decoder.decode(content_bytes, asn1Spec=EncryptedData())
         ciphertext = bytes(enc_data['ciphertext'])
         nonce = bytes(enc_data['nonce'])
         ccm_tag = bytes(enc_data['ccmTag'])
