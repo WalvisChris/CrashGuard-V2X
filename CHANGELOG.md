@@ -17,7 +17,7 @@
 - added WAVE message decoding.  
 
 ## [1.0] - 2025/11/14  
-- first release.  
+- first version.  
 - added WAVE message encoding.  
     - added Public Key Infrastructure to encrypt data.  
     - added neccessary ASN.1 structures:
