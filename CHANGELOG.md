@@ -1,3 +1,7 @@
+## [3.0] - FUTURE  
+- corrected decode.py.  
+- added generation time validation and signature validation on recipient side.  
+
 ## [2.2] - 2025/11/23  
 - added corrected ASN.1 classes:
     - *Uint8, Uint16, Uint32, Uint256, HashedData, HeaderInfo, ToBeSignedData, EcdsaP256Signature, Signature, SignerIdentifier, SignerInfo, SignedData, RecipientInfo, EncryptedData, EnvelopedData, Ieee1609Dot2Content, Ieee1609Dot2Data*.  
@@ -5,7 +9,7 @@
 - still have to update decode.py...  
 
 ## [2.1] - 2025/11/23
-- added GenerationTime check and signature verification on receiver side.  
+- added generation time validation and signature validation on recipient side.  
 - added real private and public keys to the demo.  
 
 ## [2.0] - 2025/11/19  
