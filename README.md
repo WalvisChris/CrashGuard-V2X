@@ -11,7 +11,7 @@ creating C-ITS V2X communication using WAVE standard (IEEE 1609.2). Includes:
 - Symmetrical encryption
 - ECDSA (p-256) key generation  
 
-...using **Python**  
+...using **Python 3.12.2**  
 
 # Python Demo - WAVE encoding
 1. V2X payload  

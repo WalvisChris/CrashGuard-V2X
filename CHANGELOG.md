@@ -1,5 +1,7 @@
+## [2.2] - 2025/11/13  
+- added corrected ASN.1 classes. updated encode.py accordingly.  
+
 ## [2.1] - 2025/11/23
-- added corrected ASN.1 classes.  
 - added GenerationTime check and signature verification on receiver side.  
 - added real private and public keys to the demo.  
 

@@ -1,16 +1,23 @@
 from pyasn1.type import univ, char, namedtype, namedval, constraint
 
 # --- Basic types ---
-Uint8 = univ.Integer().subtype(subtypeSpec=constraint.ValueRangeConstraint(0, 255))
-Uint16 = univ.Integer().subtype(subtypeSpec=constraint.ValueRangeConstraint(0, 65535))
-Uint32 = univ.Integer().subtype(subtypeSpec=constraint.ValueRangeConstraint(0, 2**32-1))
-Uint256 = univ.Integer().subtype(subtypeSpec=constraint.ValueRangeConstraint(0, 2**256-1))
+class Uint8(univ.Integer):
+    subtypeSpec = constraint.ValueRangeConstraint(0, 255)
+
+class Uint16(univ.Integer):
+    constraint.ValueRangeConstraint(0, 65535)
+
+class Uint32(univ.Integer):
+    constraint.ValueRangeConstraint(0, 2**32-1)
+
+class Uint256(univ.Integer):
+    constraint.ValueRangeConstraint(0, 2**256-1)
 
 # --- HashedData (Simplified) ---
 class HashedData(univ.Sequence):
     componentType = namedtype.NamedTypes(
         namedtype.NamedType('hashAlgorithm', univ.ObjectIdentifier()),
-        namedtype.NamedTypes('hashedData', univ.OctetString())
+        namedtype.NamedType('hashedData', univ.OctetString())
     )
 
 # --- HeaderInfo ---
@@ -33,8 +40,8 @@ class ToBeSignedData(univ.Sequence):
 # --- EcdsaP256Signature ---
 class EcdsaP256Signature(univ.Sequence):
     componentType = namedtype.NamedTypes(
-        namedtype.NamedTypes('r', Uint256()),
-        namedtype.NamedTypes('s', Uint256())
+        namedtype.NamedType('r', Uint256()),
+        namedtype.NamedType('s', Uint256())
     )
 
 # --- SignatureChoice (Choice) ---
@@ -64,8 +71,8 @@ class SignerInfo(univ.Sequence):
 class SignedData(univ.Sequence):
     componentType = namedtype.NamedTypes(
         namedtype.NamedType('tbsData', ToBeSignedData()),
-        namedtype.NamedType('signerInfo', SignerInfo())
-        # TODO hashId
+        namedtype.NamedType('signerInfo', SignerInfo()),
+        namedtype.OptionalNamedType('hashId', univ.Integer())
     )
 
 # --- RecipientInfo ---
@@ -107,7 +114,7 @@ class Ieee1609Dot2Data(univ.Sequence):
         namedtype.NamedType('protocolVersion', Uint8()),
         namedtype.NamedType('contentType', univ.Enumerated(
             namedValues=namedval.NamedValues(
-                ('unsecureData', 0),
+                ('unsecuredData', 0),
                 ('signedData', 1),
                 ('encryptedData', 2),
                 ('envelopedData', 3)
