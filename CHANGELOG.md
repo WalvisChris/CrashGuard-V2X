@@ -1,5 +1,7 @@
-## [2.2] - 2025/11/13  
-- added corrected ASN.1 classes. updated encode.py accordingly.  
+## [2.2] - 2025/11/23  
+- added corrected ASN.1 classes.
+- updated encode.py accordingly.  
+- still have to update decode.py...  
 
 ## [2.1] - 2025/11/23
 - added GenerationTime check and signature verification on receiver side.  
