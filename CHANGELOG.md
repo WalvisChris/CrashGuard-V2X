@@ -1,3 +1,7 @@
+## [2.1] - 2025/11/23
+- added GenerationTime check and signature verification on receiver side.  
+- added real private and public keys to the demo.  
+
 ## [2.0] - 2025/11/19  
 - added "EnvelopedData" ASN.1 structure which combines "SignedData" and "EncryptedData".  
 - removed Public Key Infrasturcture and added GROUP_KEY for scalability.  
