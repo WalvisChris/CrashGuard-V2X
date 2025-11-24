@@ -2,35 +2,39 @@ from cryptography.hazmat.primitives.asymmetric import ec
 from cryptography.hazmat.primitives import serialization
 import os
 
+GROUP_KEY_PATH = "keys/group_key.bin"               # has to be .bin
+PRIVATE_KEY_PATH = "keys/sender_private_key.pem"    # has to be .pem
+PUBLIC_KEY_PATH = "keys/sender_public_key.pem"      # has to be .pem
+
 def create_keys() -> None:
     
     # --- Create group key ---
-    GROUP_KEY = os.urandom(16)
+    group_key = os.urandom(16)
 
     # --- Save group key ---
-    with open("keys/group_key.bin", "wb") as f:
-        f.write(GROUP_KEY)
+    with open(GROUP_KEY_PATH, "wb") as f:
+        f.write(group_key)
     print("GROUP_KEY aangemaakt.")
 
     # --- Sender Key Pair Generation and Saving ---
-    sender_private_key = ec.generate_private_key(ec.SECP256R1())
+    private_key = ec.generate_private_key(ec.SECP256R1())
 
     # Save Sender Private Key
-    private_pem = sender_private_key.private_bytes(
+    private_pem = private_key.private_bytes(
         encoding=serialization.Encoding.PEM,
         format=serialization.PrivateFormat.PKCS8,
         encryption_algorithm=serialization.NoEncryption()
     )
-    with open("keys/sender_private_key.pem", "wb") as f:
+    with open(PRIVATE_KEY_PATH, "wb") as f:
         f.write(private_pem)
 
     # Save Sender Public Key (The part that needed fixing!)
-    sender_public_key = sender_private_key.public_key()
-    public_pem = sender_public_key.public_bytes(
+    public_key = private_key.public_key()
+    public_pem = public_key.public_bytes(
         encoding=serialization.Encoding.PEM,
         format=serialization.PublicFormat.SubjectPublicKeyInfo
     )
-    with open("keys/sender_public_key.pem", "wb") as f:
+    with open(PUBLIC_KEY_PATH, "wb") as f:
         f.write(public_pem)
     
     print("SENDER_KEYS aangemaakt.")
