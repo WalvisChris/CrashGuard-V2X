@@ -1,12 +1,16 @@
 *.bin
 *.pem
 *.txt
-asn1v1.py
+asn1_v1.py
+asn1_v4.py
 create_keys_v1.py
 decode_v1.py
+decode_v2.py
+decode_v4.py
 encode_v1.py
 encode_v2.py
 encode_v3.py
+encode_v4.py
 tmp.py
 **/__pycache__/
 *.py[cod]
