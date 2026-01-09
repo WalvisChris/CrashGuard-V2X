@@ -106,13 +106,84 @@ def decode_encrypted(payload: bytes):
     ciphertext = bytes(ciphertext_struct['ccmCiphertext'])
     aesccm = AESCCM(PSK)
 
-    isEncryptionValid, encryptionDetails = _encCheck(aesccm=aesccm, nonce=nonce, ciphertext=ciphertext)
-    terminal.text(text=f"Encryption Validation: {isEncryptionValid}: {encryptionDetails}")
+    isEncryptionValid, encryptionDetails, plaintext = _encCheck(aesccm=aesccm, nonce=nonce, ciphertext=ciphertext)
+    terminal.text(text=f"Encryption Validation: {isEncryptionValid}: {encryptionDetails}: {plaintext}")
 
 def decode_enveloped(payload: bytes):
     import CrashGuardIEEE.asn1.enveloped as asn1
     decoded, _ = decodeASN1(payload, asn1Spec=asn1.Ieee1609Dot2Data())
     terminal.printASN1(decoded)
+
+    ieee_content = decoded['content']
+    enc_data = ieee_content['encryptedData']
+    _me = enc_data['recipients'][0]
+    received_pskId = bytes(_me['pskRecipInfo'])
+    digest = hashes.Hash(hashes.SHA256())
+    digest.update(PSK)
+    expected_pskId = digest.finalize()[:8]
+
+    isPskIdValid, pskIdDetails = _comparePskId(a=received_pskId, b=expected_pskId)
+    terminal.text(text=f"PskId Validation: {isPskIdValid}: {pskIdDetails}")
+
+    ciphertext_struct = (decoded
+        ['content']
+        ['encryptedData']
+        ['ciphertext']
+        ['aes128ccm']
+    )
+    nonce = bytes(ciphertext_struct['nonce'])
+    ciphertext = bytes(ciphertext_struct['ccmCiphertext'])
+    aesccm = AESCCM(PSK)
+
+    isEncryptionValid, encryptionDetails, plaintext = _encCheck(aesccm=aesccm, nonce=nonce, ciphertext=ciphertext)
+    terminal.text(text=f"Encryption Validation: {isEncryptionValid}: {encryptionDetails}")
+
+    if plaintext:
+        signed_data, _ = decodeASN1(plaintext, asn1Spec=asn1.SignedData())
+        terminal.printASN1(signed_data)
+
+        tbs_data = signed_data['tbsData']
+        header = tbs_data['headerInfo']
+
+        start1 = int(header['generationTime'])
+        expire1 = int(header['expiryTime'])
+        isHeaderTimeValid, headerTimeDetails = _headerTimeCheck(start=start1, expire=expire1)
+        terminal.text(text=f"Header Time Validation: {isHeaderTimeValid}: {headerTimeDetails}")
+
+        signer_cert = signed_data['signer']['certificate']
+        tbs_cert = signer_cert['toBeSignedCert']
+        start2 = int(tbs_cert['validityPeriod']['start'])
+        duration = int(tbs_cert['validityPeriod']['duration']['hours'])
+        isCertTimeValid, certTimeDetails = _certTimeCheck(start=start2, duration=duration)
+        terminal.text(text=f"Certificate Time Validation: {isCertTimeValid}: {certTimeDetails}")
+
+        verify_key_indicator = tbs_cert['verifyKeyIndicator']
+        ecc_point = verify_key_indicator['ecdsaNistP256']['uncompressed']
+        x_bytes = bytes(ecc_point['x'])
+        y_bytes = bytes(ecc_point['y'])
+        x = int.from_bytes(x_bytes, 'big')
+        y = int.from_bytes(y_bytes, 'big')
+        public_numbers = ec.EllipticCurvePublicNumbers(x, y, ec.SECP256R1())
+        cert_public_key = public_numbers.public_key(default_backend())
+        signature_asn1 = signed_data['signature']['ecdsaNistP256Signature']
+        r_bytes = bytes(signature_asn1['r'])
+        s_bytes = bytes(signature_asn1['s'])
+        r = int.from_bytes(r_bytes, 'big')
+        s = int.from_bytes(s_bytes, 'big')
+        signature_der = encode_dss_signature(r, s)
+        tbs_der = encodeASN1(tbs_data)
+        digest = hashes.Hash(hashes.SHA256())
+        digest.update(tbs_der)
+        hash_value = digest.finalize()
+
+        isSignatureValid, signatureDetails = _verifySignature(key=cert_public_key, bytes=signature_der, hash=hash_value, prehashed=True)
+        terminal.text(text=f"Signature Validation: {isSignatureValid}: {signatureDetails}")
+
+        cert_signature = bytes(signer_cert['signature'])
+        cert_tbs_der = encodeASN1(tbs_cert)
+
+        isCertSignatureValid, certSignatureDetails = _verifySignature(key=cert_public_key, bytes=cert_signature, hash=cert_tbs_der)
+        terminal.text(text=f"Certificate Signature Validation: {isCertSignatureValid}: {certSignatureDetails}")
 
 def _headerTimeCheck(start, expire):
     s = int(start)
@@ -172,6 +243,6 @@ def _encCheck(aesccm, nonce, ciphertext):
             data=ciphertext,
             associated_data=None
         )
-        return True, f"Encryptie geslaagd: {plaintext}"
+        return True, f"Encryptie geslaagd.", plaintext
     except:
-        return False, "Encrypie mislukt!"
+        return False, "Encrypie mislukt!", None
