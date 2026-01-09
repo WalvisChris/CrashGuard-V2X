@@ -1,5 +1,4 @@
 from typing import List
-import time
 import os
 
 class TerminalInterface:
@@ -215,22 +214,3 @@ class TerminalInterface:
         self.text(text=("=" * 56)) # 40 text + 10 ms + 6 display
         self.text(text=f"{TOTAL}{"TOTAL":<40} : {total:>10.4f} ms{RESET}")
         self.empty()
-
-    def startTimer(self):
-        now = time.perf_counter()
-        self.start_time = now
-        self.last_timestamp = now
-
-    def getTime(self):
-        if self.start_time is None:
-            return None
-        return (time.perf_counter() - self.start_time) * 1000 # milliseconden
-    
-    def getTimeStamp(self):
-        if self.last_timestamp is None:
-            return None
-
-        now = time.perf_counter()
-        delta = now - self.last_timestamp
-        self.last_timestamp = now
-        return delta * 1000  # ms sinds vorige timestamp
