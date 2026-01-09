@@ -2,4 +2,4 @@
 
 # TODO  
 - Timer class gebruiken voor logging/rapportages.  
-- PskId & encryptie validatie bij decoding.  
+- decode enveloped.  
