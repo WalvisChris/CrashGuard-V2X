@@ -2,4 +2,5 @@
 
 # TODO  
 - Timer class gebruiken voor logging/rapportages.  
-- decode enveloped.  
+- CLI organiseren.  
+- v2x-redteam.py  

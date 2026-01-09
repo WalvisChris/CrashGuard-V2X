@@ -1,10 +1,9 @@
 from cryptography.hazmat.primitives.asymmetric.utils import Prehashed, decode_dss_signature
-from cryptography.hazmat.primitives import hashes
 from cryptography.hazmat.primitives.ciphers.aead import AESCCM
 from cryptography.hazmat.primitives.asymmetric import ec
-from CrashGuardIEEE import terminal, PRIVATE_KEY, PSK
+from cryptography.hazmat.primitives import hashes
 from pyasn1.codec.der.encoder import encode as encodeASN1
-from pyasn1.type import tag
+from CrashGuardIEEE import terminal, PRIVATE_KEY, PSK
 import time
 import os
 
