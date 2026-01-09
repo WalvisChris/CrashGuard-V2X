@@ -1,17 +1,15 @@
 from CrashGuardIEEE import encoder, decoder, terminal, MESSAGE, saveMessage
 
-# Content Types
 CONTENT_TYPES = ["unsecure", "signed", "encrypted", "enveloped"]
 
 def main():
-    # Terminal
     terminal.clear()
-
     terminal.textbox(title=("Choice"), items=["encode", "decode"], numbered=True)
     choice = int(terminal.input(prompt="> "))
     terminal.clear()
 
     match choice:
+        # ENCODE
         case 1:
             payload = terminal.input(prompt="payload: ")
             terminal.empty()
@@ -20,7 +18,6 @@ def main():
             contentType = int(terminal.input(prompt="> "))
             terminal.clear()
 
-            # IEEE messages
             payload_bytes = payload.encode('utf-8')
             match contentType:
                 case 1:
@@ -37,10 +34,12 @@ def main():
                     saveMessage(envelopedMessage)
                 case _:
                     terminal.text(text=f"Invalid content type: {contentType}", color="red")
+        # DECODE
         case 2:
             terminal.clear()
             if MESSAGE == None: terminal.text(text="No message to decode!", color="red")
             else: decoder.decode(MESSAGE)
+        # DEFAULT
         case _:
             terminal.text(text=f"Invalid choice type: {choice}!", color="red")
 
