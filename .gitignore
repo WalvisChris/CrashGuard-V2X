@@ -1,6 +1,3 @@
-msg.txt
-old/
 keys/
-released/
-**/__pycache__/
-*.py[cod]
+__pycache__/
+.gitignore
