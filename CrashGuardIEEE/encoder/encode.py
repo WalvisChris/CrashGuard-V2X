@@ -2,8 +2,9 @@ from cryptography.hazmat.primitives.asymmetric.utils import Prehashed, decode_ds
 from cryptography.hazmat.primitives import hashes
 from cryptography.hazmat.primitives.ciphers.aead import AESCCM
 from cryptography.hazmat.primitives.asymmetric import ec
-from CrashGuardIEEE import asn1, terminal, PRIVATE_KEY, PSK
+from CrashGuardIEEE import terminal, PRIVATE_KEY, PSK
 from pyasn1.codec.der.encoder import encode as encodeASN1
+from pyasn1.type import tag
 import time
 import os
 
@@ -11,8 +12,11 @@ def encode_unsecure(payload: bytes) -> bytes:
     """
     Eenvoudige message met raw payload; alleen gebruiken voor tests.
     """
+    import CrashGuardIEEE.asn1.unsecure as asn1
+
     ieee_data = asn1.Ieee1609Dot2Data()
     ieee_data['protocolVersion'] = 3
+    ieee_data['contentType'] = 0
     ieee_data['content'] = asn1.Ieee1609Dot2Content()
     ieee_data['content']['unsecureData'] = payload
     
@@ -24,6 +28,8 @@ def encode_signed(payload: bytes) -> bytes:
     """
     Maak een signed message met signature en certificate. De ontvanger kan het bericht authentiseren door controle van de signature en het certificaat.
     """
+    import CrashGuardIEEE.asn1.signed as asn1
+
     PSID = 0x20
     GENERATION_TIME = int(time.time() * 1_000_000)
     EXPIRY_TIME = GENERATION_TIME + 10_000_000
@@ -87,6 +93,7 @@ def encode_signed(payload: bytes) -> bytes:
 
     ieee_data = asn1.Ieee1609Dot2Data()
     ieee_data['protocolVersion'] = 3
+    ieee_data['contentType'] = 1
     ieee_data['content'] = asn1.Ieee1609Dot2Content()
     ieee_data['content']['signedData'] = signed_data
     
@@ -98,14 +105,16 @@ def encode_encrypted(payload: bytes) -> bytes:
     """
     Versleuteld/encrypted bericht wat versleuteld wordt met AESCCM sleutel. Waarborgt de vetrouwelijkeheid van het bericht.
     """
+    import CrashGuardIEEE.asn1.encrypted as asn1
+
     digest = hashes.Hash(hashes.SHA256())
     digest.update(PSK)
     pskId = digest.finalize()[:8]
 
     recipient1 = asn1.RecipientInfo()
-    recipient1['pskRecipInfo'] = asn1.PreSharedKeyRecipientInfo(pskId)
+    recipient1['pskRecipInfo'] = pskId
     recipient2 = asn1.RecipientInfo()
-    recipient2['pskRecipInfo'] = asn1.PreSharedKeyRecipientInfo(pskId)
+    recipient2['pskRecipInfo'] = pskId
     recipients_seq = asn1.SequenceOfRecipientInfo()
     recipients_seq.append(recipient1)
     recipients_seq.append(recipient2)
@@ -124,6 +133,7 @@ def encode_encrypted(payload: bytes) -> bytes:
 
     ieee_data = asn1.Ieee1609Dot2Data()
     ieee_data['protocolVersion'] = 3
+    ieee_data['contentType'] = 2
     ieee_data['content'] = asn1.Ieee1609Dot2Content()
     ieee_data['content']['encryptedData'] = enc_data
 
@@ -135,6 +145,8 @@ def encode_enveloped(payload: bytes) -> bytes:
     """
     Combinatie van signed & encrypted, waarbij SignedData wordt geencrypt. Waarborgt integriteit en vertrouwelijkheid.
     """
+    import CrashGuardIEEE.asn1.enveloped as asn1
+
     PSID = 0x20
     GENERATION_TIME = int(time.time() * 1_000_000)
     EXPIRY_TIME = GENERATION_TIME + 10_000_000
@@ -225,6 +237,7 @@ def encode_enveloped(payload: bytes) -> bytes:
 
     ieee_data = asn1.Ieee1609Dot2Data()
     ieee_data['protocolVersion'] = 3
+    ieee_data['contentType'] = 3
     ieee_data['content'] = asn1.Ieee1609Dot2Content()
     ieee_data['content']['encryptedData'] = enc_data
 

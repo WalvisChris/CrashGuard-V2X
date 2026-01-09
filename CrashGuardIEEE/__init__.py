@@ -1,5 +1,4 @@
 # This file is necessary to make this directory a package.
-
 import os
 from cryptography.hazmat.primitives.asymmetric import ec
 from cryptography.hazmat.primitives.serialization import (
@@ -9,18 +8,20 @@ from cryptography.hazmat.primitives.serialization import (
 from .terminal.TerminalInterface import TerminalInterface
 
 # Key file paths
-KEY_DIR = "keys/"
-PRIVATE_KEY_FILE = os.path.join(KEY_DIR, "private_key.pem")
-PUBLIC_KEY_FILE = os.path.join(KEY_DIR, "public_key.pem")
-PSK_KEY_FILE = os.path.join(KEY_DIR, "psk.txt")
+DATA_DIR = "data/"
+PRIVATE_KEY_FILE = os.path.join(DATA_DIR, "private_key.pem")
+PUBLIC_KEY_FILE = os.path.join(DATA_DIR, "public_key.pem")
+PSK_KEY_FILE = os.path.join(DATA_DIR, "psk.txt")
+MESSAGE_FILE = os.path.join(DATA_DIR, "msg.txt")
 
 # Ensure key directory exists
-os.makedirs(KEY_DIR, exist_ok=True)
+os.makedirs(DATA_DIR, exist_ok=True)
 
 # Package-level variables
 PRIVATE_KEY = None
 PUBLIC_KEY = None
 PSK = None
+MESSAGE = None
 terminal = TerminalInterface()  # terminal instance
 
 def createKeys():
@@ -80,8 +81,21 @@ def loadKeys():
 
     print("[CrashGuardIEEE]: keys and PSK loaded successfully")
 
+def saveMessage(message: bytes):
+    global MESSAGE
+    
+    MESSAGE = message
+    with open(MESSAGE_FILE, "wb") as f:
+        f.write(message)
+
+def loadMessage():
+    global MESSAGE
+    with open(MESSAGE_FILE, "rb") as f:
+        MESSAGE = f.read()
+
 # Automatically load keys when package is imported
 loadKeys()
+loadMessage()
 
 # Import submodules
 from . import encoder

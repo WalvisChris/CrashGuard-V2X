@@ -1,5 +1,17 @@
 from pyasn1.type import univ, namedtype, constraint, namedval, char
 
+class HashedId32(univ.OctetString):
+    subtypeSpec = constraint.ValueSizeConstraint(32, 32)
+
+class HashedId48(univ.OctetString):
+    subtypeSpec = constraint.ValueSizeConstraint(48, 48)
+
+# CHOICE > SEQUENCE
+class HashedData(univ.Sequence):
+    componentType = namedtype.NamedTypes(
+        namedtype.NamedType('sha256HashedData', HashedId32())
+    )
+
 class SignedDataPayload(univ.Sequence):
     componentType = namedtype.NamedTypes(
         namedtype.NamedType('data', univ.OctetString()),
@@ -39,21 +51,40 @@ class EccP256CurvePoint(univ.Sequence):
         namedtype.NamedType('uncompressed', UncompressedP256())
     )
 
-class VerificationKeyIndicator(univ.Sequence):
+# CHOICE > SEQUENCE
+"""
+class EccP256CurvePoint(univ.Sequence):
     componentType = namedtype.NamedTypes(
-        namedtype.NamedType('ecdsaNistP256', EccP256CurvePoint())
+        namedtype.NamedType('x-only', univ.OctetString(subtypeSpec=constraint.ValueSizeConstraint(32, 32)))
     )
+"""
+    
+class EcdsaP256Signature(univ.Sequence):
+    componentType = namedtype.NamedTypes(
+        namedtype.NamedType('r', univ.OctetString(subtypeSpec=constraint.ValueSizeConstraint(32, 32))),
+        namedtype.NamedType('s', univ.OctetString(subtypeSpec=constraint.ValueSizeConstraint(32, 32)))
+    )
+
+# CHOICE > SEQUENCE
+class Signature(univ.Sequence):
+    componentType = namedtype.NamedTypes(
+        namedtype.NamedType('ecdsaNistP256Signature', EcdsaP256Signature())
+    )
+
+class HashedId8(univ.OctetString):
+    subtypeSpec = constraint.ValueSizeConstraint(8, 8)
+
+class HashedId3(univ.OctetString):
+    subtypeSpec = constraint.ValueSizeConstraint(3, 3)
 
 class Hostname(char.UTF8String):
     subtypeSpec = constraint.ValueSizeConstraint(0, 255)
 
+# CHOICE > SEQUENCE
 class CertificateId(univ.Sequence):
     componentType = namedtype.NamedTypes(
         namedtype.NamedType('name', Hostname())
     )
-
-class HashedId3(univ.OctetString):
-    subtypeSpec = constraint.ValueSizeConstraint(3, 3)
 
 class Uint16(univ.Integer):
     subtypeSpec = constraint.ValueRangeConstraint(0, 65535)
@@ -79,6 +110,12 @@ class ValidityPeriod(univ.Sequence):
         namedtype.NamedType('duration', Duration())
     )
 
+# CHOICE > SEQUENCE
+class VerificationKeyIndicator(univ.Sequence):
+    componentType = namedtype.NamedTypes(
+        namedtype.NamedType('ecdsaNistP256', EccP256CurvePoint())
+    )
+
 class ToBeSignedCertificate(univ.Sequence):
     componentType = namedtype.NamedTypes(
         namedtype.NamedType('id', CertificateId()),
@@ -88,17 +125,14 @@ class ToBeSignedCertificate(univ.Sequence):
         namedtype.NamedType('verifyKeyIndicator', VerificationKeyIndicator())
     )
 
-class Uint8(univ.Integer):
-    subtypeSpec = constraint.ValueRangeConstraint(0, 255)
-
 class CertificateType(univ.Enumerated):
     namedValues = namedval.NamedValues(
         ('explicit', 0),
         ('implicit', 1)
     )
 
-class HashedId8(univ.OctetString):
-    subtypeSpec = constraint.ValueSizeConstraint(8, 8)
+class Uint8(univ.Integer):
+    subtypeSpec = constraint.ValueRangeConstraint(0, 255)
 
 class IssuerIdentifier(univ.Sequence):
     componentType = namedtype.NamedTypes(
@@ -121,18 +155,6 @@ class SignerIdentifier(univ.Sequence):
         namedtype.NamedType('certificate', Certificate())
     )
 
-class EcdsaP256Signature(univ.Sequence):
-    componentType = namedtype.NamedTypes(
-        namedtype.NamedType('r', univ.OctetString(subtypeSpec=constraint.ValueSizeConstraint(32, 32))),
-        namedtype.NamedType('s', univ.OctetString(subtypeSpec=constraint.ValueSizeConstraint(32, 32)))
-    )
-
-# CHOICE > SEQUENCE
-class Signature(univ.Sequence):
-    componentType = namedtype.NamedTypes(
-        namedtype.NamedType('ecdsaNistP256Signature', EcdsaP256Signature())
-    )
-
 class HashAlgorithm(univ.Enumerated):
     namedValues = namedval.NamedValues(
         ('sha256', 0),
@@ -148,62 +170,26 @@ class SignedData(univ.Sequence):
         namedtype.NamedType('signature', Signature())
     )
 
-class Opaque(univ.OctetString):
-    pass
-
-class One28BitCcmCiphertext(univ.Sequence):
-    componentType = namedtype.NamedTypes(
-        namedtype.NamedType('nonce', univ.OctetString(subtypeSpec=constraint.ValueSizeConstraint(12, 12))),
-        namedtype.NamedType('ccmCiphertext', Opaque())
-    )
-
-class SymmetricCiphertext(univ.Sequence):
-    componentType = namedtype.NamedTypes(
-        namedtype.NamedType('aes128ccm', One28BitCcmCiphertext()),
-    )
-
-class PreSharedKeyRecipientInfo(HashedId8):
-    pass
-
-# CHOICE > SEQUENCE
-class RecipientInfo(univ.Sequence):
-    componentType = namedtype.NamedTypes(
-        namedtype.NamedType('pskRecipInfo', PreSharedKeyRecipientInfo()),
-    )
-
-class SequenceOfRecipientInfo(univ.SequenceOf):
-    componentType = RecipientInfo()
-
-class EncryptedData(univ.Sequence):
-    componentType = namedtype.NamedTypes(
-        namedtype.NamedType('recipients', SequenceOfRecipientInfo()),
-        namedtype.NamedType('ciphertext', SymmetricCiphertext())
-    )
-
-class EncryptedData(univ.Sequence):
-    componentType = namedtype.NamedTypes(
-        namedtype.NamedType('recipients', SequenceOfRecipientInfo()),
-        namedtype.NamedType('ciphertext', SymmetricCiphertext())
-    )
-
-"""
 # CHOICE > SEQUENCE
 class Ieee1609Dot2Content(univ.Sequence):
     componentType = namedtype.NamedTypes(
-        namedtype.NamedType('encryptedData', EncryptedData()),
+        namedtype.NamedType('signedData', SignedData())
     )
-"""
 
-# TESTING
-class Ieee1609Dot2Content(univ.Sequence):
-    componentType = namedtype.NamedTypes(
-        namedtype.OptionalNamedType('unsecureData', Opaque()),
-        namedtype.OptionalNamedType('signedData', SignedData()),
-        namedtype.OptionalNamedType('encryptedData', EncryptedData()),
+class Uint8(univ.Integer):
+    subtypeSpec = constraint.ValueRangeConstraint(0, 255)
+
+class ContentType(univ.Enumerated):
+    namedValues = namedval.NamedValues(
+        ('unsecureData', 0),
+        ('signedData', 1),
+        ('encryptedData', 2),
+        ('envelopedData', 3)
     )
 
 class Ieee1609Dot2Data(univ.Sequence):
     componentType = namedtype.NamedTypes(
         namedtype.NamedType('protocolVersion', Uint8()),
+        namedtype.NamedType('contentType', ContentType()),
         namedtype.NamedType('content', Ieee1609Dot2Content())
     )
