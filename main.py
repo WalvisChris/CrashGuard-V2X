@@ -1,11 +1,11 @@
-from CrashGuardIEEE import encoder, decoder, terminal, MESSAGE, saveMessage
+from CrashGuardIEEE import encoder, decoder, tester, terminal, MESSAGE, saveMessage
 from pyasn1.codec.der.decoder import decode as decodeASN1
 from pyasn1.type import univ
 from CrashGuardIEEE.timer import *
 
 CONTENT_TYPES = ["unsecure", "signed", "encrypted", "enveloped"]
 CHOICES = ["encode", "decode", "testing"]
-TESTING_CHOICES = ["Time - Encoding", "Time - Decoding", "MITM", "Replay", "Fake Credentials"]
+TESTING_CHOICES = ["Time - Encoding", "Time - Decoding", "Time", "MITM", "Replay", "Fake Credentials"]
 
 def main():
     terminal.clear()
@@ -87,12 +87,14 @@ def _testing():
             newTimer = Timer()
             _decode(timer=newTimer)
             terminal.logTimes(newTimer.timestamps, newTimer.total)
+        # Time
+        case 3: tester.Time()
         # MITM
-        case 3: pass
+        case 4: tester.MITM()
         # Replay
-        case 4: pass
+        case 5: tester.Replay()
         # Fake Credentials
-        case 5: pass
+        case 6: tester.FakeCredentials()
         # DEFAULT
         case _: terminal.text(text=f"Invalid choice type: {choice}!", color="red")
 

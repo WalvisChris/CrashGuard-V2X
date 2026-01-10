@@ -1,6 +1,8 @@
 # CrashGuard C-ITS V2X IEEE 1609.2 and PKI  
 
 # TODO  
-- Timer class gebruiken voor logging/rapportages.  
-- CLI organiseren.  
-- v2x-redteam.py  
+- testing.py:
+    - Time > `signed` bericht maken met custom tijdsvelden.  
+    - MITM > `enveloped` bericht bekijken en doorsturen naar recipient.  
+    - Replay > oud `enveloped` bericht oproepen.  
+    - Fake Credentials > nep `enveloped` bericht maken.  
