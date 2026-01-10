@@ -209,7 +209,7 @@ class TerminalInterface:
         RESET = self.RESET
         self.text(text=f"{"TIMESTAMP":<40} : {"TIME":>10}")
         self.text(text=("=" * 56)) # 40 text + 10 ms + 6 display
-        for text, time in times:
+        for time, text in times:
             self.text(text=f"{text:<40} : {LOG}{time:>10.4f} ms{RESET}")
         self.text(text=("=" * 56)) # 40 text + 10 ms + 6 display
         self.text(text=f"{TOTAL}{"TOTAL":<40} : {total:>10.4f} ms{RESET}")

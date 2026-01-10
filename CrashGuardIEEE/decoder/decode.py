@@ -4,45 +4,39 @@ from cryptography.hazmat.primitives.asymmetric import ec
 from cryptography.hazmat.primitives import hashes
 from cryptography.hazmat.backends import default_backend
 from CrashGuardIEEE import terminal, PSK
+from CrashGuardIEEE.timer import *
 from pyasn1.codec.der.decoder import decode as decodeASN1
 from pyasn1.codec.der.encoder import encode as encodeASN1
-from pyasn1.type import univ
 import time
 
-def decode(payload: bytes):
-    top_level, _ = decodeASN1(payload, asn1Spec=univ.Sequence())
-    content_type = int(top_level[1])
-    
-    match content_type:
-        case 0:
-            decode_unsecure(payload)
-        case 1:
-            decode_signed(payload)
-        case 2:
-            decode_encrypted(payload)
-        case 3:
-            decode_enveloped(payload)
-        case _:
-            terminal.text(text=f"Invalid content type: {content_type}!", color="red")
-
-def decode_unsecure(payload: bytes):
+def decode_unsecure(payload: bytes, timer: Timer | None = None) -> bytes:
     import CrashGuardIEEE.asn1.unsecure as asn1
+    if timer: timer.startTimer()
+    
     decoded, _ = decodeASN1(payload, asn1Spec=asn1.Ieee1609Dot2Data())
+    if timer:
+        timer.setTimeStamp("Top level decoding")
+        timer.stopTimer()
     terminal.printASN1(decoded)
 
-def decode_signed(payload: bytes):
+def decode_signed(payload: bytes, timer: Timer | None = None) -> bytes:
     import CrashGuardIEEE.asn1.signed as asn1
+    if timer: timer.startTimer()
+
     decoded, _ = decodeASN1(payload, asn1Spec=asn1.Ieee1609Dot2Data())
+    if timer: timer.setTimeStamp("Top level decoding")
     terminal.printASN1(decoded)
 
     ieee_content = decoded['content']
     signed_data = ieee_content['signedData']
     tbs_data = signed_data['tbsData']
     header = tbs_data['headerInfo']
+    if timer: timer.setTimeStamp("ASN1 uitpakken")
 
     start1 = int(header['generationTime'])
     expire1 = int(header['expiryTime'])
     isHeaderTimeValid, headerTimeDetails = _headerTimeCheck(start=start1, expire=expire1)
+    if timer: timer.setTimeStamp("Header Time Validation")
     terminal.text(text=f"Header Time Validation: {isHeaderTimeValid}: {headerTimeDetails}")
 
     signer_cert = signed_data['signer']['certificate']
@@ -50,6 +44,7 @@ def decode_signed(payload: bytes):
     start2 = int(tbs_cert['validityPeriod']['start'])
     duration = int(tbs_cert['validityPeriod']['duration']['hours'])
     isCertTimeValid, certTimeDetails = _certTimeCheck(start=start2, duration=duration)
+    if timer: timer.setTimeStamp("Certificate Time Validation")
     terminal.text(text=f"Certificate Time Validation: {isCertTimeValid}: {certTimeDetails}")
 
     verify_key_indicator = tbs_cert['verifyKeyIndicator']
@@ -60,40 +55,53 @@ def decode_signed(payload: bytes):
     y = int.from_bytes(y_bytes, 'big')
     public_numbers = ec.EllipticCurvePublicNumbers(x, y, ec.SECP256R1())
     cert_public_key = public_numbers.public_key(default_backend())
+    if timer: timer.setTimeStamp("Certificate Public Key berekend")
     signature_asn1 = signed_data['signature']['ecdsaNistP256Signature']
     r_bytes = bytes(signature_asn1['r'])
     s_bytes = bytes(signature_asn1['s'])
     r = int.from_bytes(r_bytes, 'big')
     s = int.from_bytes(s_bytes, 'big')
     signature_der = encode_dss_signature(r, s)
+    if timer: timer.setTimeStamp("Signature berekend")
     tbs_der = encodeASN1(tbs_data)
     digest = hashes.Hash(hashes.SHA256())
     digest.update(tbs_der)
     hash_value = digest.finalize()
 
     isSignatureValid, signatureDetails = _verifySignature(key=cert_public_key, bytes=signature_der, hash=hash_value, prehashed=True)
+    if timer: timer.setTimeStamp("Signature Validation")
     terminal.text(text=f"Signature Validation: {isSignatureValid}: {signatureDetails}")
 
     cert_signature = bytes(signer_cert['signature'])
     cert_tbs_der = encodeASN1(tbs_cert)
 
     isCertSignatureValid, certSignatureDetails = _verifySignature(key=cert_public_key, bytes=cert_signature, hash=cert_tbs_der)
+    if timer: timer.setTimeStamp("Certificate Validation")
     terminal.text(text=f"Certificate Signature Validation: {isCertSignatureValid}: {certSignatureDetails}")
 
-def decode_encrypted(payload: bytes):
-    import CrashGuardIEEE.asn1.encrypted as asn1  
+    if timer:
+        timer.stopTimer()
+
+def decode_encrypted(payload: bytes, timer: Timer | None = None) -> bytes:
+    import CrashGuardIEEE.asn1.encrypted as asn1
+    if timer: timer.startTimer()
+
     decoded, _ = decodeASN1(payload, asn1Spec=asn1.Ieee1609Dot2Data())
+    if timer: timer.setTimeStamp("Top level decoding")
     terminal.printASN1(decoded)
     
     ieee_content = decoded['content']
     enc_data = ieee_content['encryptedData']
     _me = enc_data['recipients'][0]
     received_pskId = bytes(_me['pskRecipInfo'])
+    if timer: timer.setTimeStamp("ASN1 uitpakken")
     digest = hashes.Hash(hashes.SHA256())
     digest.update(PSK)
     expected_pskId = digest.finalize()[:8]
+    if timer: timer.setTimeStamp("Expected PskId berekend")
 
     isPskIdValid, pskIdDetails = _comparePskId(a=received_pskId, b=expected_pskId)
+    if timer: timer.setTimeStamp("PskId Validation")
     terminal.text(text=f"PskId Validation: {isPskIdValid}: {pskIdDetails}")
 
     ciphertext_struct = (decoded
@@ -105,24 +113,34 @@ def decode_encrypted(payload: bytes):
     nonce = bytes(ciphertext_struct['nonce'])
     ciphertext = bytes(ciphertext_struct['ccmCiphertext'])
     aesccm = AESCCM(PSK)
+    if timer: timer.setTimeStamp("AESCCM key berekend")
 
     isEncryptionValid, encryptionDetails, plaintext = _encCheck(aesccm=aesccm, nonce=nonce, ciphertext=ciphertext)
+    if timer: timer.setTimeStamp("Encryption Validation")
     terminal.text(text=f"Encryption Validation: {isEncryptionValid}: {encryptionDetails}: {plaintext}")
 
-def decode_enveloped(payload: bytes):
+    if timer: timer.stopTimer()
+
+def decode_enveloped(payload: bytes, timer: Timer | None = None) -> bytes:
     import CrashGuardIEEE.asn1.enveloped as asn1
+    if timer: timer.startTimer()
+
     decoded, _ = decodeASN1(payload, asn1Spec=asn1.Ieee1609Dot2Data())
+    if timer: timer.setTimeStamp("Top level decoding")
     terminal.printASN1(decoded)
 
     ieee_content = decoded['content']
     enc_data = ieee_content['encryptedData']
     _me = enc_data['recipients'][0]
     received_pskId = bytes(_me['pskRecipInfo'])
+    if timer: timer.setTimeStamp("ASN1 uitpakken")
     digest = hashes.Hash(hashes.SHA256())
     digest.update(PSK)
     expected_pskId = digest.finalize()[:8]
+    if timer: timer.setTimeStamp("PskId berekend")
 
     isPskIdValid, pskIdDetails = _comparePskId(a=received_pskId, b=expected_pskId)
+    if timer: timer.setTimeStamp("PskId Validation")
     terminal.text(text=f"PskId Validation: {isPskIdValid}: {pskIdDetails}")
 
     ciphertext_struct = (decoded
@@ -134,8 +152,10 @@ def decode_enveloped(payload: bytes):
     nonce = bytes(ciphertext_struct['nonce'])
     ciphertext = bytes(ciphertext_struct['ccmCiphertext'])
     aesccm = AESCCM(PSK)
+    if timer: timer.setTimeStamp("AESCCM key berekend")
 
     isEncryptionValid, encryptionDetails, plaintext = _encCheck(aesccm=aesccm, nonce=nonce, ciphertext=ciphertext)
+    if timer: timer.setTimeStamp("Encryption Validation")
     terminal.text(text=f"Encryption Validation: {isEncryptionValid}: {encryptionDetails}")
 
     if plaintext:
@@ -144,10 +164,12 @@ def decode_enveloped(payload: bytes):
 
         tbs_data = signed_data['tbsData']
         header = tbs_data['headerInfo']
+        if timer: timer.setTimeStamp("ASN1 uitpakken")
 
         start1 = int(header['generationTime'])
         expire1 = int(header['expiryTime'])
         isHeaderTimeValid, headerTimeDetails = _headerTimeCheck(start=start1, expire=expire1)
+        if timer: timer.setTimeStamp("Header Time Validation")
         terminal.text(text=f"Header Time Validation: {isHeaderTimeValid}: {headerTimeDetails}")
 
         signer_cert = signed_data['signer']['certificate']
@@ -155,6 +177,7 @@ def decode_enveloped(payload: bytes):
         start2 = int(tbs_cert['validityPeriod']['start'])
         duration = int(tbs_cert['validityPeriod']['duration']['hours'])
         isCertTimeValid, certTimeDetails = _certTimeCheck(start=start2, duration=duration)
+        if timer: timer.setTimeStamp("Certificate Time Validation")
         terminal.text(text=f"Certificate Time Validation: {isCertTimeValid}: {certTimeDetails}")
 
         verify_key_indicator = tbs_cert['verifyKeyIndicator']
@@ -165,25 +188,31 @@ def decode_enveloped(payload: bytes):
         y = int.from_bytes(y_bytes, 'big')
         public_numbers = ec.EllipticCurvePublicNumbers(x, y, ec.SECP256R1())
         cert_public_key = public_numbers.public_key(default_backend())
+        if timer: timer.setTimeStamp("Certificate Public Key berekend")
         signature_asn1 = signed_data['signature']['ecdsaNistP256Signature']
         r_bytes = bytes(signature_asn1['r'])
         s_bytes = bytes(signature_asn1['s'])
         r = int.from_bytes(r_bytes, 'big')
         s = int.from_bytes(s_bytes, 'big')
         signature_der = encode_dss_signature(r, s)
+        if timer: timer.setTimeStamp("Signature berekend")
         tbs_der = encodeASN1(tbs_data)
         digest = hashes.Hash(hashes.SHA256())
         digest.update(tbs_der)
         hash_value = digest.finalize()
 
         isSignatureValid, signatureDetails = _verifySignature(key=cert_public_key, bytes=signature_der, hash=hash_value, prehashed=True)
+        if timer: timer.setTimeStamp("Signature Validation")
         terminal.text(text=f"Signature Validation: {isSignatureValid}: {signatureDetails}")
 
         cert_signature = bytes(signer_cert['signature'])
         cert_tbs_der = encodeASN1(tbs_cert)
 
         isCertSignatureValid, certSignatureDetails = _verifySignature(key=cert_public_key, bytes=cert_signature, hash=cert_tbs_der)
+        if timer: timer.setTimeStamp("Certificate Signature Validation")
         terminal.text(text=f"Certificate Signature Validation: {isCertSignatureValid}: {certSignatureDetails}")
+
+    if timer: timer.stopTimer()
 
 def _headerTimeCheck(start, expire):
     s = int(start)
