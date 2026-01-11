@@ -25,7 +25,7 @@ MESSAGE = None
 terminal = TerminalInterface()  # terminal instance
 
 def createKeys():
-    global PRIVATE_KEY, PUBLIC_KEY, PSK
+    global PRIVATE_KEY, PUBLIC_KEY
 
     private_key = ec.generate_private_key(ec.SECP256R1())
     public_key = private_key.public_key()
@@ -49,15 +49,18 @@ def createKeys():
         f.write(public_pem)
     print("[CrashGuardIEEE]: public key aangemaakt")
 
-    # Save PSK
+    # Set package-level variables
+    PRIVATE_KEY = private_key
+    PUBLIC_KEY = public_key
+
+def createPSK():
+    global PSK
+
     psk = os.urandom(16)
     with open(PSK_KEY_FILE, "wb") as f:
         f.write(psk)
     print("[CrashGuardIEEE]: psk aangemaakt")
 
-    # Set package-level variables
-    PRIVATE_KEY = private_key
-    PUBLIC_KEY = public_key
     PSK = psk
 
 def loadKeys():
@@ -66,6 +69,7 @@ def loadKeys():
     # If any key missing, create all keys
     if not (os.path.exists(PRIVATE_KEY_FILE) and os.path.exists(PUBLIC_KEY_FILE) and os.path.exists(PSK_KEY_FILE)):
         createKeys()
+        createPSK()
 
     # Load private key
     with open(PRIVATE_KEY_FILE, "rb") as f:

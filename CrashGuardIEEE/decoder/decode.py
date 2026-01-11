@@ -274,9 +274,9 @@ def _verifySignature(key, bytes, hash, prehashed=False):
                 hash,
                 ec.ECDSA(hashes.SHA256())
             )
-            return ["Signature Validatie", True, "Geldige Signature."]
+            return ["Cert Signature Validatie", True, "Geldige Signature."]
         except Exception as e:
-            return ["Signature Validatie", False, f"Ongeldige Signature: {e}"]
+            return ["Cert Signature Validatie", False, f"Ongeldige Signature: {e}"]
 
 def _comparePskId(a, b):
     if a != b:

@@ -5,7 +5,7 @@ from CrashGuardIEEE.timer import *
 
 CONTENT_TYPES = ["unsecure", "signed", "encrypted", "enveloped"]
 CHOICES = ["encode", "decode", "testing"]
-TESTING_CHOICES = ["Latency (Encoding)", "Latency (Decoding)", "Time", "MITM", "Replay", "Credentials"]
+TESTING_CHOICES = ["Latency (Encoding)", "Latency (Decoding)", "Time", "MITM", "Replay", "Keys"]
 
 def main():
     terminal.clear()
@@ -94,8 +94,8 @@ def _testing():
         case 4: tester.MITM()
         # Replay
         case 5: tester.Replay()
-        # Credentials
-        case 6: tester.Credentials()
+        # Keys
+        case 6: tester.Keys()
         # DEFAULT
         case _: terminal.text(text=f"Invalid choice type: {choice}!", color="red")
 

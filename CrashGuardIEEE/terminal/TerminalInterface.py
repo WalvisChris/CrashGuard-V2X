@@ -206,11 +206,12 @@ class TerminalInterface:
     def logFase4(self, headerTime=None, certTime=None, sig=None, certSig=None, pskId=None, enc=None):
         TRUE = self.COLORS["bright_green"]
         FALSE = self.COLORS["red"]
+        TITLE = self.COLORS["vs_yellow"]
         RESET = self.RESET
         
         resultaten = [headerTime, certTime, sig, certSig, pskId, enc]
 
-        self.text(text="───────────────[Decoding Rapport FASE4]───────────────")
+        self.text(text=f"───────────────[{TITLE}Decoding Rapport FASE4{RESET}]───────────────")
         for resultaat in resultaten:
             if resultaat:
                 # resultaat = ["label", bool, "details"]
