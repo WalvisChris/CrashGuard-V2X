@@ -9,8 +9,10 @@ from .terminal.TerminalInterface import TerminalInterface
 
 # Key file paths
 DATA_DIR = "data/"
-PRIVATE_KEY_FILE = os.path.join(DATA_DIR, "private_key.pem")
-PUBLIC_KEY_FILE = os.path.join(DATA_DIR, "public_key.pem")
+ROOT_CA_PRIVATE_KEY_FILE = os.path.join(DATA_DIR, "root_ca_private_key.pem")
+ROOT_CA_PUBLIC_KEY_FILE = os.path.join(DATA_DIR, "root_ca_public_key.pem")
+SENDER_PRIVATE_KEY_FILE = os.path.join(DATA_DIR, "sender_private_key.pem")
+SENDER_PUBLIC_KEY_FILE = os.path.join(DATA_DIR, "sender_public_key.pem")
 PSK_KEY_FILE = os.path.join(DATA_DIR, "psk.txt")
 MESSAGE_FILE = os.path.join(DATA_DIR, "msg.txt")
 
@@ -18,14 +20,16 @@ MESSAGE_FILE = os.path.join(DATA_DIR, "msg.txt")
 os.makedirs(DATA_DIR, exist_ok=True)
 
 # Package-level variables
-PRIVATE_KEY = None
-PUBLIC_KEY = None
+ROOT_CA_PRIVATE_KEY = None
+ROOT_CA_PUBLIC_KEY = None
+SENDER_PRIVATE_KEY = None
+SENDER_PUBLIC_KEY = None
 PSK = None
 MESSAGE = None
 terminal = TerminalInterface()  # terminal instance
 
-def createKeys():
-    global PRIVATE_KEY, PUBLIC_KEY
+def createSenderKeys():
+    global SENDER_PRIVATE_KEY, SENDER_PUBLIC_KEY
 
     private_key = ec.generate_private_key(ec.SECP256R1())
     public_key = private_key.public_key()
@@ -36,22 +40,51 @@ def createKeys():
         format=PrivateFormat.PKCS8,
         encryption_algorithm=NoEncryption()
     )
-    with open(PRIVATE_KEY_FILE, "wb") as f:
+    with open(SENDER_PRIVATE_KEY_FILE, "wb") as f:
         f.write(private_pem)
-    print("[CrashGuardIEEE]: private key aangemaakt")
+    print("[CrashGuardIEEE]: Sender private key aangemaakt")
 
     # Save public key
     public_pem = public_key.public_bytes(
         encoding=Encoding.PEM,
         format=PublicFormat.SubjectPublicKeyInfo
     )
-    with open(PUBLIC_KEY_FILE, "wb") as f:
+    with open(SENDER_PUBLIC_KEY_FILE, "wb") as f:
         f.write(public_pem)
-    print("[CrashGuardIEEE]: public key aangemaakt")
+    print("[CrashGuardIEEE]: Sender public key aangemaakt")
 
     # Set package-level variables
-    PRIVATE_KEY = private_key
-    PUBLIC_KEY = public_key
+    SENDER_PRIVATE_KEY = private_key
+    SENDER_PUBLIC_KEY = public_key
+
+def createRootCAKeys():
+    global ROOT_CA_PRIVATE_KEY, ROOT_CA_PUBLIC_KEY
+
+    private_key = ec.generate_private_key(ec.SECP256R1())
+    public_key = private_key.public_key()
+
+    # Save private key
+    private_pem = private_key.private_bytes(
+        encoding=Encoding.PEM,
+        format=PrivateFormat.PKCS8,
+        encryption_algorithm=NoEncryption()
+    )
+    with open(ROOT_CA_PRIVATE_KEY_FILE, "wb") as f:
+        f.write(private_pem)
+    print("[CrashGuardIEEE]: Root CA private key aangemaakt")
+
+    # Save public key
+    public_pem = public_key.public_bytes(
+        encoding=Encoding.PEM,
+        format=PublicFormat.SubjectPublicKeyInfo
+    )
+    with open(ROOT_CA_PUBLIC_KEY_FILE, "wb") as f:
+        f.write(public_pem)
+    print("[CrashGuardIEEE]: Root CA public key aangemaakt")
+
+    # Set package-level variables
+    ROOT_CA_PRIVATE_KEY = private_key
+    ROOT_CA_PUBLIC_KEY = public_key
 
 def createPSK():
     global PSK
@@ -64,26 +97,37 @@ def createPSK():
     PSK = psk
 
 def loadKeys():
-    global PRIVATE_KEY, PUBLIC_KEY, PSK
+    global ROOT_CA_PRIVATE_KEY, ROOT_CA_PUBLIC_KEY, SENDER_PRIVATE_KEY, SENDER_PUBLIC_KEY, PSK
 
     # If any key missing, create all keys
-    if not (os.path.exists(PRIVATE_KEY_FILE) and os.path.exists(PUBLIC_KEY_FILE) and os.path.exists(PSK_KEY_FILE)):
-        createKeys()
+    if not (os.path.exists(SENDER_PRIVATE_KEY_FILE) and os.path.exists(SENDER_PUBLIC_KEY_FILE)):
+        createSenderKeys()
+
+    if not (os.path.exists(ROOT_CA_PRIVATE_KEY_FILE) and os.path.exists(ROOT_CA_PUBLIC_KEY_FILE)):
+        createRootCAKeys()
+    
+    if not (os.path.exists(PSK_KEY_FILE)):
         createPSK()
 
-    # Load private key
-    with open(PRIVATE_KEY_FILE, "rb") as f:
-        PRIVATE_KEY = load_pem_private_key(f.read(), password=None)
+    # Load root ca keys
+    with open(ROOT_CA_PRIVATE_KEY_FILE, "rb") as f:
+        ROOT_CA_PRIVATE_KEY = load_pem_private_key(f.read(), password=None)
 
-    # Load public key
-    with open(PUBLIC_KEY_FILE, "rb") as f:
-        PUBLIC_KEY = load_pem_public_key(f.read())
+    with open(ROOT_CA_PUBLIC_KEY_FILE, "rb") as f:
+        ROOT_CA_PUBLIC_KEY = load_pem_public_key(f.read())
+
+    # Load sender keys
+    with open(SENDER_PRIVATE_KEY_FILE, "rb") as f:
+        SENDER_PRIVATE_KEY = load_pem_private_key(f.read(), password=None)
+
+    with open(SENDER_PUBLIC_KEY_FILE, "rb") as f:
+        SENDER_PUBLIC_KEY = load_pem_public_key(f.read())
 
     # Load PSK
     with open(PSK_KEY_FILE, "rb") as f:
         PSK = f.read()
 
-    print("[CrashGuardIEEE]: keys and PSK loaded successfully")
+    print("[CrashGuardIEEE]: root ca & sender keys and PSK loaded successfully")
 
 def saveMessage(message: bytes):
     global MESSAGE

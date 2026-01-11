@@ -1,4 +1,4 @@
-from CrashGuardIEEE import MESSAGE, terminal, createKeys, createPSK
+from CrashGuardIEEE import MESSAGE, terminal, createPSK, createRootCAKeys, createSenderKeys
 
 def Time():
     pass
@@ -11,16 +11,20 @@ def Replay():
 
 def Keys():
     terminal.clear()
-    terminal.textbox(title=("Choice"), items=["Private Key", "Psk (pre shared key)"], numbered=True)
+    terminal.textbox(title=("Choice"), items=["Root CA Keys", "Sender Keys", "Psk (pre shared key)"], numbered=True)
     choice = int(terminal.input(prompt="> "))
 
     match choice:
-        # PRIVATE KEY
+        # ROOT CA KEYS
         case 1:
-            createKeys()
-            terminal.text(text="Keys aangepast. Probeer nu het bericht te decoden.")
-        # PSK
+            createRootCAKeys()
+            terminal.text(text="Root CA Keys aangepast. Probeer nu het bericht te decoden.")
+        # SENDER KEYS
         case 2:
+            createSenderKeys
+            terminal.text(text="Sender Keys aangepast. Probeer nu het bericht te decoden.")
+        # PSK
+        case 3:
             createPSK()
             terminal.text(text="PSK aangepast. Probeer nu het bericht te decoden.")
         case _:

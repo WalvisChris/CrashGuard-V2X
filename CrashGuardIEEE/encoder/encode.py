@@ -3,7 +3,7 @@ from cryptography.hazmat.primitives.ciphers.aead import AESCCM
 from cryptography.hazmat.primitives.asymmetric import ec
 from cryptography.hazmat.primitives import hashes
 from pyasn1.codec.der.encoder import encode as encodeASN1
-from CrashGuardIEEE import terminal, PRIVATE_KEY, PSK
+from CrashGuardIEEE import terminal, ROOT_CA_PRIVATE_KEY, SENDER_PRIVATE_KEY, PSK
 from CrashGuardIEEE.timer import *
 import time
 import os
@@ -38,7 +38,7 @@ def encode_signed(payload: bytes, timer: Timer | None = None) -> bytes:
 
     PSID = 0x20
     GENERATION_TIME = int(time.time() * 1_000_000)
-    EXPIRY_TIME = GENERATION_TIME + 10_000_000
+    EXPIRY_TIME = GENERATION_TIME + 10_000_000 # 10 seconden
     if timer: timer.setTimeStamp("HeaderInfo metdata creeren")
 
     tbs_data = asn1.ToBeSignedData()
@@ -51,8 +51,8 @@ def encode_signed(payload: bytes, timer: Timer | None = None) -> bytes:
     if timer: timer.setTimeStamp("ASN1 inpakken: ToBeSignedData")
 
     verify_key = asn1.VerificationKeyIndicator()
-    PUBLIC_KEY = PRIVATE_KEY.public_key()
-    numbers = PUBLIC_KEY.public_numbers()
+    SENDER_PUBLIC_KEY = SENDER_PRIVATE_KEY.public_key()
+    numbers = SENDER_PUBLIC_KEY.public_numbers()
     x_bytes = numbers.x.to_bytes(32, 'big')
     y_bytes = numbers.y.to_bytes(32, 'big')
     if timer: timer.setTimeStamp("VerifyKey als X, Y")
@@ -84,7 +84,7 @@ def encode_signed(payload: bytes, timer: Timer | None = None) -> bytes:
     if timer: timer.setTimeStamp("ASN1 inpakken: SignerIdentifier")
     cert_tbs_der = encodeASN1(tbs_cert)
     if timer: timer.setTimeStamp("ASN1 encoding: cert_tbs_der")
-    cert_signature = PRIVATE_KEY.sign(cert_tbs_der, ec.ECDSA(hashes.SHA256()))
+    cert_signature = ROOT_CA_PRIVATE_KEY.sign(cert_tbs_der, ec.ECDSA(hashes.SHA256()))
     if timer: timer.setTimeStamp("Private Key Signing")
     signer['certificate']['signature'] = cert_signature
 
@@ -94,7 +94,7 @@ def encode_signed(payload: bytes, timer: Timer | None = None) -> bytes:
     digest = hashes.Hash(hashes.SHA256())
     digest.update(tbs_der)
     hash_value = digest.finalize()
-    signature_der = PRIVATE_KEY.sign(hash_value, ec.ECDSA(Prehashed(hashes.SHA256())))
+    signature_der = SENDER_PRIVATE_KEY.sign(hash_value, ec.ECDSA(Prehashed(hashes.SHA256())))
     if timer: timer.setTimeStamp("Private key Signing")
     r, s = decode_dss_signature(signature_der)
     if timer: timer.setTimeStamp("Signature als R, S")
@@ -197,8 +197,8 @@ def encode_enveloped(payload: bytes, timer: Timer | None = None) -> bytes:
     if timer: timer.setTimeStamp("ASN1 inpakken: ToBeSignedData")
 
     verify_key = asn1.VerificationKeyIndicator()
-    PUBLIC_KEY = PRIVATE_KEY.public_key()
-    numbers = PUBLIC_KEY.public_numbers()
+    SENDER_PUBLIC_KEY = SENDER_PRIVATE_KEY.public_key()
+    numbers = SENDER_PUBLIC_KEY.public_numbers()
     x_bytes = numbers.x.to_bytes(32, 'big')
     y_bytes = numbers.y.to_bytes(32, 'big')
     if timer: timer.setTimeStamp("VerifyKey als X, Y")
@@ -230,7 +230,7 @@ def encode_enveloped(payload: bytes, timer: Timer | None = None) -> bytes:
     if timer: timer.setTimeStamp("ASN1 inpakken: SignerIdentifier")
     cert_tbs_der = encodeASN1(tbs_cert)
     if timer: timer.setTimeStamp("ASN1 encoding: cert_tbs_der")
-    cert_signature = PRIVATE_KEY.sign(cert_tbs_der, ec.ECDSA(hashes.SHA256()))
+    cert_signature = ROOT_CA_PRIVATE_KEY.sign(cert_tbs_der, ec.ECDSA(hashes.SHA256()))
     if timer: timer.setTimeStamp("Private Key Signing")
     signer['certificate']['signature'] = cert_signature
     if timer: timer.setTimeStamp("Signer Signature inpakken")
@@ -241,7 +241,7 @@ def encode_enveloped(payload: bytes, timer: Timer | None = None) -> bytes:
     digest = hashes.Hash(hashes.SHA256())
     digest.update(tbs_der)
     hash_value = digest.finalize()
-    signature_der = PRIVATE_KEY.sign(hash_value, ec.ECDSA(Prehashed(hashes.SHA256())))
+    signature_der = SENDER_PRIVATE_KEY.sign(hash_value, ec.ECDSA(Prehashed(hashes.SHA256())))
     if timer: timer.setTimeStamp("Private key Signing")
     r, s = decode_dss_signature(signature_der)
     if timer: timer.setTimeStamp("Signature als R, S")

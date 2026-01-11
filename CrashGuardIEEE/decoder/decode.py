@@ -3,7 +3,7 @@ from cryptography.hazmat.primitives.ciphers.aead import AESCCM
 from cryptography.hazmat.primitives.asymmetric import ec
 from cryptography.hazmat.primitives import hashes
 from cryptography.hazmat.backends import default_backend
-from CrashGuardIEEE import terminal, PSK
+from CrashGuardIEEE import terminal, PSK, ROOT_CA_PUBLIC_KEY
 from CrashGuardIEEE.timer import *
 from pyasn1.codec.der.decoder import decode as decodeASN1
 from pyasn1.codec.der.encoder import encode as encodeASN1
@@ -72,18 +72,15 @@ def decode_signed(payload: bytes, timer: Timer | None = None) -> bytes:
     if timer: timer.setTimeStamp("Signature berekend")
     tbs_der = encodeASN1(tbs_data)
     if timer: timer.setTimeStamp("ASN1 encoding: ToBeSignedData")
-    digest = hashes.Hash(hashes.SHA256())
-    digest.update(tbs_der)
-    hash_value = digest.finalize()
 
-    isSignatureValid = _verifySignature(key=cert_public_key, bytes=signature_der, hash=hash_value, prehashed=True)
+    isSignatureValid = _verifyMessageSignature(key=cert_public_key, signature=signature_der, data=tbs_der)
     if timer: timer.setTimeStamp("Validation: SignedData Signature")
 
     cert_signature = bytes(signer_cert['signature'])
     cert_tbs_der = encodeASN1(tbs_cert)
     if timer: timer.setTimeStamp("ASN1 encoding: ToBeSignedCertificate")
 
-    isCertSignatureValid = _verifySignature(key=cert_public_key, bytes=cert_signature, hash=cert_tbs_der)
+    isCertSignatureValid = _verifyCertificateSignature(key=ROOT_CA_PUBLIC_KEY, signature=cert_signature, data=cert_tbs_der)
     if timer: timer.setTimeStamp("Validation: Certificate Signature")
 
     if timer: timer.stopTimer()
@@ -216,18 +213,15 @@ def decode_enveloped(payload: bytes, timer: Timer | None = None) -> bytes:
         if timer: timer.setTimeStamp("Signature berekend")
         tbs_der = encodeASN1(tbs_data)
         if timer: timer.setTimeStamp("ASN1 encoding: ToBeSignedData")
-        digest = hashes.Hash(hashes.SHA256())
-        digest.update(tbs_der)
-        hash_value = digest.finalize()
 
-        isSignatureValid = _verifySignature(key=cert_public_key, bytes=signature_der, hash=hash_value, prehashed=True)
+        isSignatureValid = _verifyMessageSignature(key=cert_public_key, signature=signature_der, data=tbs_der)
         if timer: timer.setTimeStamp("Validation: SignedData Signature")
 
         cert_signature = bytes(signer_cert['signature'])
         cert_tbs_der = encodeASN1(tbs_cert)
         if timer: timer.setTimeStamp("ASN1 encoding: ToBeSignedCertificate")
 
-        isCertSignatureValid = _verifySignature(key=cert_public_key, bytes=cert_signature, hash=cert_tbs_der)
+        isCertSignatureValid = _verifyCertificateSignature(key=ROOT_CA_PUBLIC_KEY, signature=cert_signature, data=cert_tbs_der)
         if timer: timer.setTimeStamp("Validation: Certificate Signature")
 
     if timer: timer.stopTimer()
@@ -256,27 +250,27 @@ def _certTimeCheck(start, duration):
         return ["Certificaat Tijdcontrole", False, "Certificaat uit de toekomst!"]
     return ["Certificaat Tijdcontrole", True, "Geldig certificaat."]
 
-def _verifySignature(key, bytes, hash, prehashed=False):
-    if prehashed:
-        try:
-            key.verify(
-                bytes,
-                hash,
-                ec.ECDSA(Prehashed(hashes.SHA256()))
-            )
-            return ["Signature Validatie", True, "Geldige Signature."]
-        except Exception as e:
-            return ["Signature Validatie", False, f"Ongeldige Signature: {e}"]
-    else:
-        try:
-            key.verify(
-                bytes,
-                hash,
-                ec.ECDSA(hashes.SHA256())
-            )
-            return ["Cert Signature Validatie", True, "Geldige Signature."]
-        except Exception as e:
-            return ["Cert Signature Validatie", False, f"Ongeldige Signature: {e}"]
+def _verifyMessageSignature(key, signature, data):
+    try:
+        key.verify(
+            signature,
+            data,
+            ec.ECDSA(hashes.SHA256())
+        )
+        return ["Msg Signature Validatie", True, "Geldige Signature."]
+    except Exception as e:
+        return ["Msg Signature Validatie", False, f"Ongeldige Signature: {e}"]
+
+def _verifyCertificateSignature(key, signature, data):
+    try:
+        key.verify(
+            signature,
+            data,
+            ec.ECDSA(hashes.SHA256())
+        )
+        return ["Cert Signature Validatie", True, "Geldige Signature."]
+    except Exception as e:
+        return ["Cert Signature Validatie", False, f"Ongeldige Signature: {e}"] 
 
 def _comparePskId(a, b):
     if a != b:
