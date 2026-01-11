@@ -9,5 +9,5 @@ def MITM():
 def Replay():
     pass
 
-def FakeCredentials():
+def Credentials():
     pass
