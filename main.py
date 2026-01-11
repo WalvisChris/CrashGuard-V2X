@@ -25,6 +25,7 @@ def main():
 
 def _encode(timer: Timer | None = None):
     payload = terminal.input(prompt="payload: ")
+    if payload == "`": payload = "Pas op! Pijlwagen" # SHORTCUT
     terminal.empty()
 
     terminal.textbox(title=(f"payload: {payload}"), title_color="cyan", items=CONTENT_TYPES, numbered=True)
