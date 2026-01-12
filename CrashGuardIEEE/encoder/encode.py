@@ -38,7 +38,7 @@ def encode_signed(payload: bytes, timer: Timer | None = None) -> bytes:
 
     PSID = 0x20
     GENERATION_TIME = int(time.time() * 1_000_000)
-    EXPIRY_TIME = GENERATION_TIME + 10_000_000 # 10 seconden
+    EXPIRY_TIME = GENERATION_TIME + 60_000_000 # 60 seconden
     if timer: timer.setTimeStamp("HeaderInfo metdata creeren")
 
     tbs_data = asn1.ToBeSignedData()
@@ -184,7 +184,7 @@ def encode_enveloped(payload: bytes, timer: Timer | None = None) -> bytes:
 
     PSID = 0x20
     GENERATION_TIME = int(time.time() * 1_000_000)
-    EXPIRY_TIME = GENERATION_TIME + 10_000_000
+    EXPIRY_TIME = GENERATION_TIME + 60_000_000 # 60 seconden
     if timer: timer.setTimeStamp("HeaderInfo metdata creeren")
 
     tbs_data = asn1.ToBeSignedData()
