@@ -9,7 +9,7 @@ TESTING_CHOICES = ["Latency (Encoding)", "Latency (Decoding)", "Time", "MITM", "
 
 def main():
     terminal.clear()
-    terminal.textbox(title=("Choice"), items=CHOICES, numbered=True)
+    terminal.textbox(title="Choice", items=CHOICES, numbered=True)
     choice = int(terminal.input(prompt="> "))
     terminal.clear()
 
