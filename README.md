@@ -1,5 +1,7 @@
 # CrashGuard V2X  
-**Features:**  
+Research about IEEE 1609.2 for V2X applications.  
+
+### Features  
 - Custom Libary (CrashGuardIEEE)  
 - ASN.1 (IEEE 1609.2)  
 - Root CA  
@@ -15,7 +17,7 @@
     - encrypted data  
     - enveloped data  
 
-**Validtion:**  
+### Validtion  
 - Message time  
 - Certificate time  
 - Message signature  
@@ -23,7 +25,7 @@
 - PskId matching  
 - Encryption  
 
-**Testing:**  
+### Testing  
 - MITM:  
     - Protocol Version  
     - Content Type  
@@ -43,6 +45,6 @@
     - change SENDER keys  
     - change PSK (pre shared key)  
 
-# TODO  
+### TODO  
 - testing.py:
     - Replay > oud `enveloped` bericht oproepen.  
