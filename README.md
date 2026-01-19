@@ -16,6 +16,7 @@ Research about IEEE 1609.2 for V2X applications.
     - signed data  
     - encrypted data  
     - enveloped data  
+- Visualization  
 
 ### Validtion  
 - Message time  
@@ -48,3 +49,4 @@ Research about IEEE 1609.2 for V2X applications.
 ### TODO  
 - testing.py:
     - Replay > oud `enveloped` bericht oproepen.  
+    - Visualizer  

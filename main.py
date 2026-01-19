@@ -1,10 +1,10 @@
-from CrashGuardIEEE import encoder, decoder, tester, terminal, MESSAGE, saveMessage
+from CrashGuardIEEE import encoder, decoder, tester, terminal, MESSAGE, saveMessage, Visualizer
 from pyasn1.codec.der.decoder import decode as decodeASN1
 from pyasn1.type import univ
 from CrashGuardIEEE.timer import *
 
 CONTENT_TYPES = ["unsecure", "signed", "encrypted", "enveloped"]
-CHOICES = ["encode", "decode", "testing"]
+CHOICES = ["encode", "decode", "testing", "visualize"]
 TESTING_CHOICES = ["Latency (Encoding)", "Latency (Decoding)", "MITM", "Replay", "Keys"]
 
 def main():
@@ -20,6 +20,8 @@ def main():
         case 2: _decode()
         # TESTING
         case 3: _testing()
+        # VISUALIZE
+        case 4: _visualize()
         # DEFAULT
         case _: terminal.text(text=f"Invalid choice type: {choice}!", color="red")
 
@@ -96,6 +98,11 @@ def _testing():
         case 5: tester.Keys()
         # DEFAULT
         case _: terminal.text(text=f"Invalid choice type: {choice}!", color="red")
+
+def _visualize():
+    terminal.text(text="Visualizer will be openend in another window.")
+    window = Visualizer()
+    window.start()
 
 if __name__ == "__main__":
     main()

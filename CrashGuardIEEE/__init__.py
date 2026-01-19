@@ -149,3 +149,4 @@ loadMessage()
 from . import encoder
 from . import decoder
 from . import asn1
+from .visualizer.visuals import Visualizer
