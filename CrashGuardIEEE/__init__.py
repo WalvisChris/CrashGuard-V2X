@@ -27,6 +27,7 @@ SENDER_PUBLIC_KEY = None
 PSK = None
 MESSAGE = None
 terminal = TerminalInterface()  # terminal instance
+latest_protocol_version = 3
 
 def createSenderKeys():
     global SENDER_PRIVATE_KEY, SENDER_PUBLIC_KEY

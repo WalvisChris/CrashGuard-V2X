@@ -3,7 +3,7 @@ from cryptography.hazmat.primitives.ciphers.aead import AESCCM
 from cryptography.hazmat.primitives.asymmetric import ec
 from cryptography.hazmat.primitives import hashes
 from cryptography.hazmat.backends import default_backend
-from CrashGuardIEEE import terminal, PSK, ROOT_CA_PUBLIC_KEY
+from CrashGuardIEEE import terminal, PSK, ROOT_CA_PUBLIC_KEY, latest_protocol_version
 from CrashGuardIEEE.timer import *
 from pyasn1.codec.der.decoder import decode as decodeASN1
 from pyasn1.codec.der.encoder import encode as encodeASN1
@@ -19,6 +19,12 @@ def decode_unsecure(payload: bytes, timer: Timer | None = None) -> bytes:
             timer.setTimeStamp("ASN1 decoding: Ieee1609Dot2Data")
             timer.stopTimer()
 
+        # Protocol Version Validatie
+        protocol_version = decoded['protocolVersion']
+        protocol_version = int(protocol_version)
+        if protocol_version < latest_protocol_version:
+            terminal.text(f"Message protocol version ({protocol_version}) is outdated. Latest version is {latest_protocol_version}", color="red")
+        
         terminal.printASN1(decoded)
     
     except:
@@ -35,6 +41,13 @@ def decode_signed(payload: bytes, timer: Timer | None = None) -> bytes:
     try:
         decoded, _ = decodeASN1(payload, asn1Spec=asn1.Ieee1609Dot2Data())
         if timer: timer.setTimeStamp("ASN1 decoding: Ieee1609Dot2Data")
+        
+        # Protocol Version Validatie
+        protocol_version = decoded['protocolVersion']
+        protocol_version = int(protocol_version)
+        if protocol_version < latest_protocol_version:
+            terminal.text(f"Message protocol version ({protocol_version}) is outdated. Latest version is {latest_protocol_version}", color="red")
+        
         terminal.printASN1(decoded)
 
         ieee_content = decoded['content']
@@ -103,6 +116,13 @@ def decode_encrypted(payload: bytes, timer: Timer | None = None) -> bytes:
     try:
         decoded, _ = decodeASN1(payload, asn1Spec=asn1.Ieee1609Dot2Data())
         if timer: timer.setTimeStamp("ASN1 decoding: Ieee1609Dot2Data")
+        
+        # Protocol Version Validatie
+        protocol_version = decoded['protocolVersion']
+        protocol_version = int(protocol_version)
+        if protocol_version < latest_protocol_version:
+            terminal.text(f"Message protocol version ({protocol_version}) is outdated. Latest version is {latest_protocol_version}", color="red")
+        
         terminal.printASN1(decoded)
         
         ieee_content = decoded['content']
@@ -153,6 +173,13 @@ def decode_enveloped(payload: bytes, timer: Timer | None = None) -> bytes:
     try:
         decoded, _ = decodeASN1(payload, asn1Spec=asn1.Ieee1609Dot2Data())
         if timer: timer.setTimeStamp("ASN1 decoding: Ieee1609Dot2Data")
+        
+        # Protocol Version Validatie
+        protocol_version = decoded['protocolVersion']
+        protocol_version = int(protocol_version)
+        if protocol_version < latest_protocol_version:
+            terminal.text(f"Message protocol version ({protocol_version}) is outdated. Latest version is {latest_protocol_version}", color="red")
+        
         terminal.printASN1(decoded)
 
         ieee_content = decoded['content']
@@ -310,7 +337,12 @@ def get_decoded_unsecure(payload: bytes):
     try:
         # Uitpakken
         decoded, _ = decodeASN1(payload, asn1Spec=asn1.Ieee1609Dot2Data())
-        terminal.printASN1(decoded)
+        
+        # Protocol Version Validatie
+        protocol_version = decoded['protocolVersion']
+        protocol_version = int(protocol_version)
+        if protocol_version < latest_protocol_version:
+            terminal.text(f"Message protocol version ({protocol_version}) is outdated. Latest version is {latest_protocol_version}", color="red")
 
         # Presentatie
         payload = decoded['content']['unsecureData']
@@ -328,7 +360,12 @@ def get_decoded_signed(payload: bytes):
     import CrashGuardIEEE.asn1.signed as asn1
     try:
         decoded, _ = decodeASN1(payload, asn1Spec=asn1.Ieee1609Dot2Data())
-        terminal.printASN1(decoded)
+        
+        # Protocol Version Validatie
+        protocol_version = decoded['protocolVersion']
+        protocol_version = int(protocol_version)
+        if protocol_version < latest_protocol_version:
+            terminal.text(f"Message protocol version ({protocol_version}) is outdated. Latest version is {latest_protocol_version}", color="red")
         
         # Uitpakken
         signed_data = decoded['content']['signedData']
@@ -396,7 +433,12 @@ def get_decoded_encrypted(payload: bytes):
     try:
         # Uitpakken
         decoded, _ = decodeASN1(payload, asn1Spec=asn1.Ieee1609Dot2Data())
-        terminal.printASN1(decoded)
+        
+        # Protocol Version Validatie
+        protocol_version = decoded['protocolVersion']
+        protocol_version = int(protocol_version)
+        if protocol_version < latest_protocol_version:
+            terminal.text(f"Message protocol version ({protocol_version}) is outdated. Latest version is {latest_protocol_version}", color="red")
         
         enc_data = decoded['content']['encryptedData']
         _me = enc_data['recipients'][0]
@@ -440,7 +482,12 @@ def get_decoded_enveloped(payload: bytes):
     try:
         # Uitpakken
         decoded, _ = decodeASN1(payload, asn1Spec=asn1.Ieee1609Dot2Data())
-        terminal.printASN1(decoded)
+        
+        # Protocol Version Validatie
+        protocol_version = decoded['protocolVersion']
+        protocol_version = int(protocol_version)
+        if protocol_version < latest_protocol_version:
+            terminal.text(f"Message protocol version ({protocol_version}) is outdated. Latest version is {latest_protocol_version}", color="red")
 
         enc_data = decoded['content']['encryptedData']
         _me = enc_data['recipients'][0]
