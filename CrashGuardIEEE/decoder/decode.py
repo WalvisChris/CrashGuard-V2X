@@ -303,18 +303,23 @@ def _encCheck(aesccm, nonce, ciphertext):
         )
         return ["Encryptie", True, f"Encryptie geslaagd."], plaintext
     except:
-        return ["Encrytpie", False, "Encrypie mislukt!"], None
+        return ["Encryptie", False, "Encryptie mislukt!"], None
 
 def get_decoded_unsecure(payload: bytes):
     import CrashGuardIEEE.asn1.unsecure as asn1    
     try:
         # Uitpakken
         decoded, _ = decodeASN1(payload, asn1Spec=asn1.Ieee1609Dot2Data())
-        
+        terminal.printASN1(decoded)
+
         # Presentatie
         payload = decoded['content']['unsecureData']
-        result = { "payload": str(payload) }
-        return result
+
+        values = []
+        values.append(("payload", payload))
+
+        return values, None
+    
     except:
         terminal.text("Content type did not match the ASN.1 structure! UNSECURE", color="red")
     return None
@@ -323,6 +328,7 @@ def get_decoded_signed(payload: bytes):
     import CrashGuardIEEE.asn1.signed as asn1
     try:
         decoded, _ = decodeASN1(payload, asn1Spec=asn1.Ieee1609Dot2Data())
+        terminal.printASN1(decoded)
         
         # Uitpakken
         signed_data = decoded['content']['signedData']
@@ -365,19 +371,22 @@ def get_decoded_signed(payload: bytes):
         psid = header['psid']
         generation = header['generationTime']
         signer = tbs_cert['id']['name']
-        result = {
-            "payload": str(payload),
-            "psid": str(psid),
-            "generation time": str(generation),
-            "signer name": str(signer),
-            "validation": {
-                "HeaderTime": v1[0],
-                "CertificateTime": v2[0],
-                "MessageSignature": v3[0],
-                "CertificateSignature": v4[0]
-            }
-        }
-        return result
+
+        values = []
+        values.append(("payload", payload))
+        values.append(("psid", psid))
+        values.append(("generation time", generation))
+        values.append(("signer name", signer))
+        
+        validation = []
+        validation.append(("HeaderTime", v1[2]))
+        validation.append(("CertificateTime", v2[2]))
+        validation.append(("MessageSignature", v3[2]))
+        validation.append(("CertificateSignature", v4[2]))
+
+        terminal.logFase4(headerTime=v1, certTime=v2, sig=v3, certSig=v4)
+        return values, validation
+    
     except:
         terminal.text("Content type did not match the ASN.1 structure! SIGNED", color="red")
     return None
@@ -387,6 +396,8 @@ def get_decoded_encrypted(payload: bytes):
     try:
         # Uitpakken
         decoded, _ = decodeASN1(payload, asn1Spec=asn1.Ieee1609Dot2Data())
+        terminal.printASN1(decoded)
+        
         enc_data = decoded['content']['encryptedData']
         _me = enc_data['recipients'][0]
         received_pskId = bytes(_me['pskRecipInfo'])
@@ -407,18 +418,19 @@ def get_decoded_encrypted(payload: bytes):
         v1 = _comparePskId(a=received_pskId, b=expected_pskId)
         v2, payload = _encCheck(aesccm=aesccm, nonce=nonce, ciphertext=ciphertext)
 
+        values = []
+        values.append(("pskId", received_pskId))
+        values.append(("ciphertext", ciphertext))
+
+        validation = []
+        validation.append(("PskId", v1[2]))
+        validation.append(("Encryptie", v2[2]))
+        validation.append(("Payload", payload))
+
         # Presentatie
-        result = {
-            "pskId": str(received_pskId),
-            "nonce": str(nonce),
-            "ciphertext": str(ciphertext),
-            "validation": {
-                "PskId": v1[0],
-                "Encryptie": v2[0],
-                "Payload": payload
-            }
-        }
-        return result
+        terminal.logFase4(pskId=v1, enc=v2)
+        return values, validation
+    
     except Exception as e:
         terminal.text(f"Content type did not match the ASN.1 structure! ENCRYPTED\n{e}", color="red")
     return None
@@ -428,6 +440,8 @@ def get_decoded_enveloped(payload: bytes):
     try:
         # Uitpakken
         decoded, _ = decodeASN1(payload, asn1Spec=asn1.Ieee1609Dot2Data())
+        terminal.printASN1(decoded)
+
         enc_data = decoded['content']['encryptedData']
         _me = enc_data['recipients'][0]
         received_pskId = bytes(_me['pskRecipInfo'])
@@ -491,25 +505,28 @@ def get_decoded_enveloped(payload: bytes):
             psid = header['psid']
             generation = header['generationTime']
             signer = tbs_cert['id']['name']
+        
+        values = []
+        values.append(("pskId", received_pskId))
+        values.append(("ciphertext", ciphertext))
+        values.append(("payload", payload))
+        values.append(("psid", psid))
+        values.append(("generation time", generation))
+        values.append(("signer name", signer))
+
+        validation = []
+        validation.append(("PskId", v1[2]))
+        validation.append(("Encryptie", v2[2]))
+        validation.append(("Payload", payload))
+        validation.append(("HeaderTime", v3[2]))
+        validation.append(("CertificateTime", v4[2]))
+        validation.append(("MessageSignature", v5[2]))
+        validation.append(("CertificateSignature", v6[2]))
 
         # Presentatie
-        result = {
-            "pskId": str(received_pskId),
-            "nonce": str(nonce),
-            "ciphertext": str(ciphertext),
-            "psid": str(psid),
-            "generation time": str(generation),
-            "signer name": str(signer),
-            "validation": {
-                "PskId": v1[0],
-                "Encryptie": v2[0],
-                "HeaderTime": v3[0],
-                "CertificateTime": v4[0],
-                "MessageSignature": v5[0],
-                "CertificateSignature": v6[0]
-            }
-        }
-        return result
+        terminal.logFase4(headerTime=v3, certTime=v4, sig=v5, certSig=v6, pskId=v1, enc=v2)
+        return values, validation
+    
     except Exception as e:
         terminal.text(f"Content type did not match the ASN.1 structure! ENCRYPTED\n{e}", color="red")
     return None

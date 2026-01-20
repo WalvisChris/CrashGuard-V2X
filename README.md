@@ -50,3 +50,4 @@ Research about IEEE 1609.2 for V2X applications.
 - testing.py:
     - Replay > oud `enveloped` bericht oproepen.  
     - Visualizer  
+    - Real GPS headerdata  

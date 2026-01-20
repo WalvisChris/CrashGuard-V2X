@@ -3,7 +3,7 @@ from pyasn1.codec.der.decoder import decode as decodeASN1
 from pyasn1.type import univ
 from CrashGuardIEEE.timer import *
 
-CONTENT_TYPES = ["unsecure", "signed", "encrypted", "enveloped"]
+CONTENT_TYPES = ["unsecure (ASN.1)", "signed (ASN.1)", "encrypted (ASN.1)", "enveloped (ASN.1)"]
 CHOICES = ["encode", "decode", "testing", "visualize"]
 TESTING_CHOICES = ["Latency (Encoding)", "Latency (Decoding)", "MITM", "Replay", "Keys"]
 

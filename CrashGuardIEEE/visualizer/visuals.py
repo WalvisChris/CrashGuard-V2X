@@ -1,11 +1,8 @@
-"""
-IEEE 1609.2 CrashGuard V2X visualizer, made by LaCombo.
-"""
 from CrashGuardIEEE import MESSAGE, decoder
+import importlib.resources
 import pygame
-import hashlib
-import time
 
+# Constants
 WINDOW_SIZE = (900, 600)
 FPS = 60
 
@@ -67,7 +64,7 @@ class Button:
         return event.type == pygame.MOUSEBUTTONDOWN and event.button == 1 and self.rect.collidepoint(event.pos)
 
 class Simulation:
-    def __init__(self, surface, font, mode):
+    def __init__(self, surface, font, mode, assets):
         self.surface = surface
         self.font = font
         self.mode = mode
@@ -101,6 +98,64 @@ class Simulation:
         self.signal_blink = 0.0
         self.signal_duration = 0.0
         self.signal_type = None
+        self.json_rapport = None
+        self.assets = assets
+
+    def CHRIS_send_message(self, mode):
+        processed_result = self.CHRIS_execute_ieee(mode)
+        self.json_rapport = processed_result
+
+        self.log.append(f"[Voertuig]: V2X bericht uitpakken [{mode}]...")
+        
+        if mode == 'unsecure':
+            self._start_reaction(intensity=0.2)
+            self.packet_color = (200, 200, 200)
+        elif mode == 'signed':
+            self._start_reaction(intensity=0.6)
+            self.packet_color = (80, 200, 240)
+        elif mode == 'encrypted':
+            self._start_reaction(intensity=0.8)
+            self.packet_color = (200, 140, 240)
+        elif mode == 'enveloped':
+            self._start_reaction(intensity=1.0)
+            self.packet_color = (20, 240, 40)
+
+        self.packet_active = True
+        self.packet_progress = 0.0
+        self.packet_duration = 0.5 + (0.6 if mode == 'enveloped' else 0.2)
+        self.packet_pos[0], self.packet_pos[1] = self.Pijlwagen_pos[0], self.Pijlwagen_pos[1]
+
+    def CHRIS_execute_ieee(self, mode):
+        if mode == 'unsecure':
+            values, validation = decoder.get_decoded_unsecure(payload=MESSAGE)
+            return [values, validation]
+        elif mode == 'signed':
+            values, validation = decoder.get_decoded_signed(payload=MESSAGE)
+            return [values, validation]
+        elif mode == 'encrypted':
+            values, validation = decoder.get_decoded_encrypted(payload=MESSAGE)
+            return [values, validation]
+        elif mode == 'enveloped':
+            values, validation = decoder.get_decoded_enveloped(payload=MESSAGE)
+            return [values, validation]
+        return None
+
+    def CHRIS_send_message_instant(self, mode):
+        processed_result = self.CHRIS_execute_ieee(mode)
+        self.json_rapport = processed_result
+        self.log.append(f"[Voertuig]: V2X bericht uitpakken [{mode}]...")
+        
+        if mode == 'Not secured':
+            self.packet_color = (200, 200, 200)
+        elif mode == 'Certified':
+            self.packet_color = (80, 200, 240)
+        elif mode == 'Enveloped':
+            self.packet_color = (200, 140, 240)
+        
+        self.packet_active = True
+        self.packet_progress = 0.0
+        self.packet_duration = 1.0 
+        self.packet_pos[0], self.packet_pos[1] = self.Pijlwagen_pos[0], self.Pijlwagen_pos[1]
 
     def set_speed(self, new_speed: float):
         self.speed = max(-400.0, min(400.0, new_speed))
@@ -118,11 +173,10 @@ class Simulation:
         distance_to_car = abs(self.car_pos[0] - self.Pijlwagen_pos[0])
         if distance_to_car <= self.warning_distance and not self.message_sent and not self.paused:
             self.message_sent = True
-            self.log.append("=== AUTOMATIC WARNING SYSTEM ACTIVATED ===")
-            self.log.append(f"Distance: {int(distance_to_car)}px - Car too close!")
+            self.log.append(f"[Pijlwagen]: Afstand: {int(distance_to_car)}px - V2X bericht verzenden...")
             selected_mode = self.mode
             self.last_message_mode = selected_mode
-            self._send_message_instant(selected_mode)
+            self.CHRIS_send_message_instant(selected_mode)
         
         if self.reaction_timer > 0.0:
             t = (self.reaction_duration - self.reaction_timer) / max(1e-6, self.reaction_duration)
@@ -169,7 +223,7 @@ class Simulation:
             if self.packet_progress >= 1.0:
                 self.packet_progress = 1.0
                 self.packet_active = False
-                self._validate_and_process_message()
+                self.CHRIS_validate_and_process_message()
             sx, sy = self.Pijlwagen_pos[0], self.Pijlwagen_pos[1]
             tx, ty = self.car_pos[0], self.car_pos[1] + self.car_lane
             self.packet_pos[0] = sx + (tx - sx) * self.packet_progress
@@ -205,11 +259,12 @@ class Simulation:
             )
         else:
             col = base
-        pygame.draw.polygon(self.surface, col, [(ax, ay), (ax - 34, ay - 18), (ax - 34, ay + 18)])
-        pygame.draw.circle(self.surface, (20, 20, 20), (int(ax - 10), int(ay + 16)), 6)
-        pygame.draw.circle(self.surface, (20, 20, 20), (int(ax - 10), int(ay - 16)), 6)
-        lbl = self.font.render('Pijlwagen', True, (255, 255, 255))
-        self.surface.blit(lbl, (ax - 10, ay - 40))
+        # NEW
+        pijlwagen_img = self.assets['pijlwagen']
+        img_rect = pijlwagen_img.get_rect(center=(ax, ay))
+        self.surface.blit(pijlwagen_img, img_rect)
+        lbl = self.font.render('Pijlwagen', True, (255, 0, 0))
+        self.surface.blit(lbl, (ax - 20, ay - 60))
 
         cx, cy = self.car_pos
         cy_adjusted = cy + self.car_lane
@@ -270,45 +325,6 @@ class Simulation:
             pygame.draw.polygon(self.surface, self.packet_color, [(px - 10, py - 6), (px + 10, py - 6), (px, py - 1)])
             pygame.draw.rect(self.surface, (100, 100, 100), (px - 10, py - 6, 20, 12), 1)
 
-    def send_message(self, mode):
-        processed_result = self._execute_ieee1609_2(mode)
-
-        self.log.append(f"[{mode}] Processing...")
-        self.log.append(f"uitgepakt: {processed_result}")
-        
-        if mode == 'unsecure':
-            self._start_reaction(intensity=0.2)
-            self.packet_color = (200, 200, 200)
-        elif mode == 'signed':
-            self._start_reaction(intensity=0.6)
-            self.packet_color = (80, 200, 240)
-        elif mode == 'encrypted':
-            self._start_reaction(intensity=0.8)
-            self.packet_color = (200, 140, 240)
-        elif mode == 'enveloped':
-            self._start_reaction(intensity=1.0)
-            self.packet_color = (20, 240, 40)
-
-        self.packet_active = True
-        self.packet_progress = 0.0
-        self.packet_duration = 0.5 + (0.6 if mode == 'enveloped' else 0.2)
-        self.packet_pos[0], self.packet_pos[1] = self.Pijlwagen_pos[0], self.Pijlwagen_pos[1]
-    
-    def _execute_ieee1609_2(self, mode):
-        if mode == 'unsecure':
-            uitgepakt = decoder.get_decoded_unsecure(payload=MESSAGE)
-            return uitgepakt
-        elif mode == 'signed':
-            uitgepakt = decoder.get_decoded_signed(payload=MESSAGE)
-            return uitgepakt
-        elif mode == 'encrypted':
-            uitgepakt = decoder.get_decoded_encrypted(payload=MESSAGE)
-            return uitgepakt
-        elif mode == 'enveloped':
-            uitgepakt = decoder.get_decoded_enveloped(payload=MESSAGE)
-            return uitgepakt
-        return None
-
     def _start_reaction(self, intensity=0.5):
         self.prev_speed = self.speed
         self.target_speed = max(-400.0, self.prev_speed - int(self.prev_speed * (0.3 * intensity)))
@@ -316,64 +332,55 @@ class Simulation:
         self.reaction_timer = self.reaction_duration
         self.flash = 1.0
 
-    def _send_message_instant(self, mode):       
-        processed_result = self._execute_ieee1609_2(mode)
-        
-        self.log.append(f"[{mode}] Processing...")
-        self.log.append(f"uitgepakt: {processed_result}")
-        
-        if mode == 'Not secured':
-            self.packet_color = (200, 200, 200)
-        elif mode == 'Certified':
-            self.packet_color = (80, 200, 240)
-        elif mode == 'Enveloped':
-            self.packet_color = (200, 140, 240)
-        
-        self.packet_active = True
-        self.packet_progress = 0.0
-        self.packet_duration = 1.0 
-        self.packet_pos[0], self.packet_pos[1] = self.Pijlwagen_pos[0], self.Pijlwagen_pos[1]
-
-    def _validate_and_process_message(self):
+    def CHRIS_validate_and_process_message(self):
         """Validate message and process based on IEEE 1609.2 rules"""
-        is_valid = True
-        ttl_valid = True
-        auth_valid = True 
-        cert_valid = True 
-    
-        is_valid = ttl_valid and auth_valid and cert_valid
+        try:
+            values = self.json_rapport[0]
+            if len(values) > 0:
+                self.log.append("Values:")
+                for value in values:
+                    self.log.append(f"{value[0]}: {value[1]}")
+
+            validation = self.json_rapport[1]
+            if len(validation) > 0:
+                self.log.append("Validation:")
+                for item in validation:
+                    self.log.append(f"{item[0]}: {item[1]}")
+        except Exception as e:
+            print(f"ERROR: {e}")
+            
+        self._start_car_reaction()
+        self.target_lane = 80
+        self.lane_switching = True
+        self.lane_switch_timer = 0.0
         
-        if is_valid:
-            self._start_car_reaction()
-            self.target_lane = 80
-            self.lane_switching = True
-            self.lane_switch_timer = 0.0
-            
-            self.can_return_to_center = False
-            
-            self.signal_type = 'right'
-            self.log.append('Car: Lane change RIGHT activated (lower lane)')
-            
-            self.signal_duration = 1.5
-            self.signal_blink = 0.0
-            self.log.append('Car: Message accepted - collision avoidance activated!')
-            self.log.append('Car: LOCKED to alternate lane (cannot return to center)')
-        else:
-            self.log.append('Car: Message rejected - security validation FAILED')
-            self.log.append('Car: TTL/Auth/Cert check failed - staying in lane')
+        self.can_return_to_center = False
+        
+        self.signal_type = 'right'
+        self.log.append('[Voertuig]: wisselen van baan...')
+        
+        self.signal_duration = 1.5
+        self.signal_blink = 0.0
 
     def _start_car_reaction(self):
         self.car_reaction_timer = self.car_reaction_duration
         self.car_flash = 1.0
-        self.log.append('Car: received message (visual reaction)')
+        self.log.append('[Voertuig]: bericht ontvangen.')
 
 class Visualizer:
     def __init__(self):
-        pass
+        self.assets = {}
 
     def start(self):
         pygame.init()
         screen = pygame.display.set_mode(WINDOW_SIZE)
+        
+        # NEW
+        with importlib.resources.open_binary("CrashGuardIEEE.assets", "pijlwagen.png") as f:
+            pijlwagen_img = pygame.image.load(f).convert_alpha()
+            pijlwagen_img = pygame.transform.smoothscale(pijlwagen_img, (100, 100))
+        self.assets['pijlwagen'] = pijlwagen_img
+
         pygame.display.set_caption('IEEE 1609.2 V2I Simulation - Secure Message Container')
         clock = pygame.time.Clock()
         font = pygame.font.SysFont('Arial', 18)
@@ -415,7 +422,7 @@ class Visualizer:
                             speed_val = float(initial_speed_input) if initial_speed_input else 120.0
                             speed_val = max(0.0, min(400.0, speed_val))
                             selected_mode = dropdown.options[dropdown.selected]
-                            sim = Simulation(screen, font, selected_mode)
+                            sim = Simulation(screen, font, selected_mode, self.assets)
                             sim.speed = speed_val
                             settings_active = False
                         except ValueError:
@@ -423,7 +430,7 @@ class Visualizer:
                 
                 screen.fill((180, 210, 255))
                 title = font.render('V2I Simulation Settings', True, (10, 10, 10))
-                screen.blit(title, (300, 50))
+                screen.blit(title, (350, 25))
                 
                 mode_label = font.render('Security Mode:', True, (10, 10, 10))
                 screen.blit(mode_label, (20, 20))
@@ -444,7 +451,7 @@ class Visualizer:
                         running = False
                     if send_btn.clicked(event):
                         mode = dropdown.options[dropdown.selected]
-                        sim.send_message(mode)
+                        sim.CHRIS_send_message(mode)
                     if speed_up_btn.clicked(event):
                         sim.increase_speed(30.0)
                     if speed_down_btn.clicked(event):
