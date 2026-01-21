@@ -15,6 +15,7 @@ SENDER_PRIVATE_KEY_FILE = os.path.join(DATA_DIR, "sender_private_key.pem")
 SENDER_PUBLIC_KEY_FILE = os.path.join(DATA_DIR, "sender_public_key.pem")
 PSK_KEY_FILE = os.path.join(DATA_DIR, "psk.txt")
 MESSAGE_FILE = os.path.join(DATA_DIR, "msg.txt")
+REPLAY_FILE = os.path.join(DATA_DIR, "replay.txt")
 
 # Ensure key directory exists
 os.makedirs(DATA_DIR, exist_ok=True)
@@ -137,10 +138,21 @@ def saveMessage(message: bytes):
     with open(MESSAGE_FILE, "wb") as f:
         f.write(message)
 
+
 def loadMessage():
     global MESSAGE
     with open(MESSAGE_FILE, "rb") as f:
         MESSAGE = f.read()
+
+def saveReplay():
+    global MESSAGE
+    with open(REPLAY_FILE, "wb") as f:
+        f.write(MESSAGE)
+
+def getReplay():
+    with open(REPLAY_FILE, "rb") as f:
+        replay = f.read()
+    return replay
 
 # Automatically load keys when package is imported
 loadKeys()

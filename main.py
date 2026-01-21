@@ -17,7 +17,7 @@ def main():
         # ENCODE
         case 1: _encode()            
         # DECODE
-        case 2: _decode()
+        case 2: _decode(MESSAGE)
         # TESTING
         case 3: _testing()
         # VISUALIZE
@@ -51,25 +51,25 @@ def _encode(timer: Timer | None = None):
         case _:
             terminal.text(text=f"Invalid content type: {content_type}", color="red")
 
-def _decode(timer: Timer | None = None):
+def _decode(message: bytes, timer: Timer | None = None):
     terminal.clear()
-    if MESSAGE == None: terminal.text(text="No message to decode!", color="red")
+    if message == None: terminal.text(text="No message to decode!", color="red")
     else:
-        top_level, _ = decodeASN1(MESSAGE, asn1Spec=univ.Sequence())
+        top_level, _ = decodeASN1(message, asn1Spec=univ.Sequence())
         content_type = int(top_level[1])
         match content_type:
             case 0:
                 terminal.text(text="Found contentType: 0 - unsecure")
-                decoder.decode_unsecure(payload=MESSAGE, timer=timer)
+                decoder.decode_unsecure(payload=message, timer=timer)
             case 1:
                 terminal.text(text="Found contentType: 1 - signed")
-                decoder.decode_signed(payload=MESSAGE, timer=timer)
+                decoder.decode_signed(payload=message, timer=timer)
             case 2:
                 terminal.text(text="Found contentType: 2 - encrypted")
-                decoder.decode_encrypted(payload=MESSAGE, timer=timer)
+                decoder.decode_encrypted(payload=message, timer=timer)
             case 3:
                 terminal.text(text="Found contentType: 3 - enveloped")
-                decoder.decode_enveloped(payload=MESSAGE, timer=timer)
+                decoder.decode_enveloped(payload=message, timer=timer)
             case _:
                 terminal.text(text=f"Invalid content type: {content_type}!", color="red")
 

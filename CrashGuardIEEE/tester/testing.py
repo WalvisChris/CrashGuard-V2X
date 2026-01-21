@@ -1,4 +1,6 @@
-from CrashGuardIEEE import MESSAGE, terminal, createPSK, createRootCAKeys, createSenderKeys, saveMessage
+from CrashGuardIEEE import MESSAGE, terminal, createPSK, createRootCAKeys, createSenderKeys, saveMessage, saveReplay, getReplay
+from CrashGuardIEEE.timer import *
+from main import _decode
 from cryptography.hazmat.primitives import hashes
 from pyasn1.codec.der.encoder import encode as encodeASN1 
 from pyasn1.codec.der.decoder import decode as decodeASN1
@@ -295,7 +297,20 @@ def MITM():
                 terminal.text(text=f"Invalid choice: {choice}", color="red")
 
 def Replay():
-    pass
+    terminal.clear()
+    terminal.textbox(title=("Choice"), items=["Save replay", "Decode replay"], numbered=True)
+    choice = int(terminal.input(prompt="> "))
+
+    match choice:
+        # SAVE REPLAY
+        case 1:
+            saveReplay()
+        # LOAD REPLAY
+        case 2:
+            _decode(message=getReplay())
+        # DEFAULT
+        case _:
+            terminal.text(text=f"Invalid choice type: {choice}!", color="red")
 
 def Keys():
     terminal.clear()
