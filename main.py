@@ -26,7 +26,7 @@ def main():
 
 def _encode(timer: Timer | None = None):
     payload = terminal.input(prompt="payload: ")
-    if payload == "`": payload = "Pas op! Pijlwagen" # SHORTCUT
+    if payload == "`" or payload == "": payload = "Pas op! Pijlwagen" # SHORTCUT
     payload_bytes = payload.encode('utf-8')
 
     terminal.empty()

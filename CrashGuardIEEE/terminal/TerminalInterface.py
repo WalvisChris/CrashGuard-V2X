@@ -379,7 +379,12 @@ class TerminalInterface:
                 row = start_row + i
                 if row >= max_rows:  # veilige check
                     break
-                display_choice = choice[:max_cols]  # crop te lange keuzes
+                
+                # visual fix
+                prefix = "> " if i == selected else ""
+
+                # crop te lange keuzes
+                display_choice = (prefix + choice)[:max_cols]
                 if i == selected:
                     stdscr.attron(curses.A_REVERSE)
                     stdscr.addstr(row, 0, display_choice)

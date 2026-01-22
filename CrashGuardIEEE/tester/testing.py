@@ -351,7 +351,7 @@ def Spoofing():
 
     # Custom input
     payload = terminal.input(prompt="Payload: ")
-    if payload == "`": payload = "Pas op! Pijlwagen" # SHORTCUT
+    if payload == "`" or payload == "": payload = "Pas op! Pijlwagen" # SHORTCUT
     payload_bytes = payload.encode('utf-8')
     terminal.clear()
 
