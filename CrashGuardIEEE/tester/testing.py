@@ -24,7 +24,7 @@ def MITM():
                 import CrashGuardIEEE.asn1.unsecure as asn1
                 decoded, _ = decodeASN1(MESSAGE, asn1Spec=asn1.Ieee1609Dot2Data())
                 MANIPULATE = [
-                    "Done",
+                    "< Done",
                     "protocolVersion",
                     "contentType",
                     "payload"
@@ -33,9 +33,8 @@ def MITM():
                 
                 while manipulating:
                     terminal.clear()
-                    terminal.printASN1(decoded)                    
-                    terminal.textbox(title="Manipulate (unsecure)", items=MANIPULATE, numbered=True)
-                    choice = int(terminal.input(prompt="> "))
+                    title = terminal.getASN1Text(obj=decoded)                 
+                    choice = terminal.menu(MANIPULATE, title)
 
                     match choice:
                         # DONE
@@ -68,7 +67,7 @@ def MITM():
                 import CrashGuardIEEE.asn1.signed as asn1
                 decoded, _ = decodeASN1(MESSAGE, asn1Spec=asn1.Ieee1609Dot2Data())
                 MANIPULATE = [
-                    "Done",
+                    "< Done",
                     "protocolVersion",
                     "contentType",
                     "payload",
@@ -83,9 +82,8 @@ def MITM():
                 
                 while manipulating:
                     terminal.clear()
-                    terminal.printASN1(decoded)                    
-                    terminal.textbox(title="Manipulate (signed)", items=MANIPULATE, numbered=True)
-                    choice = int(terminal.input(prompt="> "))
+                    title = terminal.getASN1Text(obj=decoded)                 
+                    choice = terminal.menu(MANIPULATE, title)
 
                     match choice:
                         # DONE
@@ -98,23 +96,33 @@ def MITM():
                             manipulating = False
                         # PROTOCOL VERSION
                         case 2:
+                            terminal.clear()
+                            terminal.printASN1(decoded)
                             protocol_version = int(terminal.input(prompt="protocol version: "))
                             decoded['protocolVersion'] = protocol_version
                         # CONTENT TYPE
                         case 3:
+                            terminal.clear()
+                            terminal.printASN1(decoded)
                             content_type = int(terminal.input(prompt="content type: "))
                             decoded['contentType'] = content_type
                         # PAYLOAD
                         case 4:
+                            terminal.clear()
+                            terminal.printASN1(decoded)
                             payload = terminal.input(prompt="payload: ")
                             payload_bytes = payload.encode('utf-8')
                             decoded['content']['signedData']['tbsData']['payload']['data'] = payload_bytes
                         # PSID
                         case 5:
+                            terminal.clear()
+                            terminal.printASN1(decoded)
                             psid = int(terminal.input(prompt="psid: "))
                             decoded['content']['signedData']['tbsData']['headerInfo']['psid'] = psid
                         # GENERATION TIME
                         case 6:
+                            terminal.clear()
+                            terminal.printASN1(decoded)
                             terminal.textbox(title="operation", items=["add", "subtract"], numbered=True)
 
                             operation = terminal.input(prompt="> ")
@@ -130,6 +138,8 @@ def MITM():
 
                         # EXPIRY TIME
                         case 7:
+                            terminal.clear()
+                            terminal.printASN1(decoded)
                             terminal.textbox(title="operation", items=["add", "subtract"], numbered=True)
 
                             operation = terminal.input(prompt="> ")
@@ -145,10 +155,14 @@ def MITM():
 
                         # SIGNER NAME
                         case 8:
+                            terminal.clear()
+                            terminal.printASN1(decoded)
                             name = terminal.input(prompt="name: ")
                             decoded['content']['signedData']['signer']['certificate']['toBeSignedCert']['id']['name'] = name
                         # VALIDITY START
                         case 9:
+                            terminal.clear()
+                            terminal.printASN1(decoded)
                             terminal.textbox(title="operation", items=["add", "subtract"], numbered=True)
 
                             operation = terminal.input(prompt="> ")
@@ -164,6 +178,8 @@ def MITM():
 
                         # VALIDITY DURATION
                         case 10:
+                            terminal.clear()
+                            terminal.printASN1(decoded)
                             terminal.textbox(title="operation", items=["add", "subtract"], numbered=True)
 
                             operation = terminal.input(prompt="> ")
@@ -186,7 +202,7 @@ def MITM():
                 import CrashGuardIEEE.asn1.encrypted as asn1
                 decoded, _ = decodeASN1(MESSAGE, asn1Spec=asn1.Ieee1609Dot2Data())
                 MANIPULATE = [
-                    "Done",
+                    "< Done",
                     "protocolVersion",
                     "contentType",
                     "pskId",
@@ -196,9 +212,8 @@ def MITM():
                 
                 while manipulating:
                     terminal.clear()
-                    terminal.printASN1(decoded)                    
-                    terminal.textbox(title="Manipulate (encrypted)", items=MANIPULATE, numbered=True)
-                    choice = int(terminal.input(prompt="> "))
+                    title = terminal.getASN1Text(obj=decoded)                 
+                    choice = terminal.menu(MANIPULATE, title)
 
                     match choice:
                         # DONE
@@ -211,14 +226,20 @@ def MITM():
                             manipulating = False
                         # PROTOCOL VERSION
                         case 2:
+                            terminal.clear()
+                            terminal.printASN1(decoded)
                             protocol_version = int(terminal.input(prompt="protocol version: "))
                             decoded['protocolVersion'] = protocol_version
                         # CONTENT TYPE
                         case 3:
+                            terminal.clear()
+                            terminal.printASN1(decoded)
                             content_type = int(terminal.input(prompt="content type: "))
                             decoded['contentType'] = content_type
                         # PSKID
                         case 4:
+                            terminal.clear()
+                            terminal.printASN1(decoded)
                             digest = hashes.Hash(hashes.SHA256())
                             random = os.urandom(8)
                             digest.update(random)
@@ -232,6 +253,8 @@ def MITM():
 
                         # NONCE
                         case 5:
+                            terminal.clear()
+                            terminal.printASN1(decoded)
                             nonce = os.urandom(12)
                             decoded['content']['encryptedData']['ciphertext']['aes128ccm']['nonce'] = nonce
                         # DEFFAULT
@@ -243,7 +266,7 @@ def MITM():
                 import CrashGuardIEEE.asn1.enveloped as asn1
                 decoded, _ = decodeASN1(MESSAGE, asn1Spec=asn1.Ieee1609Dot2Data())
                 MANIPULATE = [
-                    "Done",
+                    "< Done",
                     "protocolVersion",
                     "contentType",
                     "pskId",
@@ -253,9 +276,8 @@ def MITM():
                 
                 while manipulating:
                     terminal.clear()
-                    terminal.printASN1(decoded)                    
-                    terminal.textbox(title="Manipulate (enveloped)", items=MANIPULATE, numbered=True)
-                    choice = int(terminal.input(prompt="> "))
+                    title = terminal.getASN1Text(obj=decoded)                 
+                    choice = terminal.menu(MANIPULATE, title)
 
                     match choice:
                         # DONE
@@ -268,14 +290,20 @@ def MITM():
                             manipulating = False
                         # PROTOCOL VERSION
                         case 2:
+                            terminal.clear()
+                            terminal.printASN1(decoded)
                             protocol_version = int(terminal.input(prompt="protocol version: "))
                             decoded['protocolVersion'] = protocol_version
                         # CONTENT TYPE
                         case 3:
+                            terminal.clear()
+                            terminal.printASN1(decoded)
                             content_type = int(terminal.input(prompt="content type: "))
                             decoded['contentType'] = content_type
                         # PSKID
                         case 4:
+                            terminal.clear()
+                            terminal.printASN1(decoded)
                             digest = hashes.Hash(hashes.SHA256())
                             random = os.urandom(8)
                             digest.update(random)
@@ -289,6 +317,8 @@ def MITM():
 
                         # NONCE
                         case 5:
+                            terminal.clear()
+                            terminal.printASN1(decoded)
                             nonce = os.urandom(12)
                             decoded['content']['encryptedData']['ciphertext']['aes128ccm']['nonce'] = nonce
                         # DEFFAULT
@@ -301,8 +331,7 @@ def MITM():
 
 def Replay():
     terminal.clear()
-    terminal.textbox(title=("Choice"), items=["Save replay", "Decode replay"], numbered=True)
-    choice = int(terminal.input(prompt="> "))
+    choice = terminal.menu(["Save replay", "Decode replay"])
 
     match choice:
         # SAVE REPLAY
@@ -317,8 +346,7 @@ def Replay():
 
 def Spoofing():
     terminal.clear()
-    terminal.textbox(title="Choice", items=["signed (ASN.1)", "enveloped (ASN.1)"], numbered=True)
-    choice = int(terminal.input(prompt="> "))
+    choice = terminal.menu(["signed (ASN.1)", "enveloped (ASN.1)"])
     terminal.clear()
 
     # Custom input
@@ -521,8 +549,7 @@ def Spoofing():
 
 def Keys():
     terminal.clear()
-    terminal.textbox(title=("Choice"), items=["Root CA Keys", "Sender Keys", "Psk (pre shared key)"], numbered=True)
-    choice = int(terminal.input(prompt="> "))
+    choice = terminal.menu(["Root CA Keys", "Sender Keys", "Psk (pre shared key)"])
 
     match choice:
         # ROOT CA KEYS

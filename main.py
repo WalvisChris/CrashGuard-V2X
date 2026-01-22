@@ -9,8 +9,7 @@ TESTING_CHOICES = ["Latency (Encoding)", "Latency (Decoding)", "MITM", "Replay",
 
 def main():
     terminal.clear()
-    terminal.textbox(title="Choice", items=CHOICES, numbered=True)
-    choice = int(terminal.input(prompt="> "))
+    choice = terminal.menu(CHOICES)
     terminal.clear()
 
     match choice:
@@ -28,13 +27,13 @@ def main():
 def _encode(timer: Timer | None = None):
     payload = terminal.input(prompt="payload: ")
     if payload == "`": payload = "Pas op! Pijlwagen" # SHORTCUT
+    payload_bytes = payload.encode('utf-8')
+
+    terminal.empty()
+    title = terminal.simpleTitle(f"Payload: {payload}")
+    content_type = terminal.menu(CONTENT_TYPES, title)
     terminal.empty()
 
-    terminal.textbox(title=(f"payload: {payload}"), title_color="cyan", items=CONTENT_TYPES, numbered=True)
-    content_type = int(terminal.input(prompt="> "))
-    terminal.clear()
-
-    payload_bytes = payload.encode('utf-8')
     match content_type:
         case 1:
             unsecureMessage = encoder.encode_unsecure(payload=payload_bytes, timer=timer)
@@ -75,8 +74,7 @@ def _decode(message: bytes, timer: Timer | None = None):
 
 def _testing():
     terminal.clear()
-    terminal.textbox(title=("Choice"), items=TESTING_CHOICES, numbered=True)
-    choice = int(terminal.input(prompt="> "))
+    choice = terminal.menu(TESTING_CHOICES)
     terminal.clear()
 
     match choice:

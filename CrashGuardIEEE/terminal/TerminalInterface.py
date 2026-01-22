@@ -1,5 +1,9 @@
 from typing import List
+import curses
 import os
+
+KEY_UP = 450
+KEY_DOWN = 456
 
 class TerminalInterface:
     
@@ -27,6 +31,8 @@ class TerminalInterface:
         self.RESET = "\033[0m"
         self.start_time = None
         self.last_timestamp = None
+        self.frame = []
+        self.COLOR_MAP = None
 
     def clear(self):
         os.system('cls')
@@ -162,6 +168,63 @@ class TerminalInterface:
 
         print(result)
 
+    def getASN1Text(self, obj):
+        text = obj.prettyPrint()
+
+        lines = text.splitlines()
+        new_lines = []
+        for line in lines:
+            leading_spaces = len(line) - len(line.lstrip(' '))
+            new_line = '>' * leading_spaces + line.lstrip(' ')
+            new_lines.append(new_line)
+        text = "\n".join(new_lines)
+
+        while "\n\n" in text:
+            text = text.replace("\n\n", "\n")
+
+        lines = text.splitlines()
+        result = []
+
+        for i, line in enumerate(lines):
+            level = len(line) - len(line.lstrip('>'))
+            content = line[level:]
+
+            # prefix (takken) toevoegen
+            prefix = ""
+            if i != 0:
+                last = self._is_last(lines, i, level)
+                prefix = ""
+                for l in range(1, level):
+                    if not self._is_last(lines, i, l):
+                        prefix += " │ "
+                    else:
+                        prefix += "   "
+                branch = " └ " if last else " ├ "
+                prefix += branch
+            
+            line_render = []
+
+            if prefix:
+                line_render.append((prefix, "default"))
+
+            if '=' in content:
+                key, val = content.split('=', 1)
+                if ':' in val:
+                    line_render.append((key, "key"))
+                    line_render.append((" = ", "default"))
+                    line_render.append((val, "object"))
+                else:
+                    line_render.append((key, "val"))
+                    line_render.append((" = ", "default"))
+                    line_render.append((val, "value"))
+            else:
+                # geen '=', hele regel default
+                line_render.append((content, "default"))
+
+            result.append(line_render)
+
+        return result
+    
     def logValidation(self, cert_time=None, time=None, sig=None, cert=None, enc=None, pskId=None):     
         resultaten = [cert_time, time, sig, cert, enc, pskId]
         output = ["--", "--", "--", "--", "--", "--"]
@@ -233,3 +296,106 @@ class TerminalInterface:
         self.text(text=("=" * 56)) # 40 text + 10 ms + 6 display
         self.text(text=f"{TOTAL}{"TOTAL":<40} : {total:>10.4f} ms{RESET}")
         self.empty()
+
+    def menu(self, choices, title=None):
+        return curses.wrapper(lambda stdscr: self.cursesMenu(stdscr, choices, title))
+
+    def simpleTitle(self, title):
+        return [[(title, "default")]]
+
+    def rbt2xterm(self, r, g, b):
+        r6 = int(r / 256 * 6)
+        g6 = int(g / 256 * 6)
+        b6 = int(b / 256 * 6)
+        return 16 + 36*r6 + 6*g6 + b6
+
+    def cursesMenu(self, stdscr, choices, title=None):
+        curses.curs_set(0)
+        curses.noecho()
+        curses.cbreak()
+        stdscr.keypad(True)
+
+        # kleurensysteem initialiseren
+        curses.initscr()
+        curses.start_color()
+        curses.use_default_colors()
+        curses.init_pair(1, curses.COLOR_BLUE, -1)              # key
+        curses.init_pair(2, self.rbt2xterm(137, 71, 252), -1)   # object
+        curses.init_pair(3, curses.COLOR_CYAN, -1)              # val
+        curses.init_pair(4, curses.COLOR_GREEN, -1)             # value
+
+        self.COLOR_MAP = {
+            "default": 0,
+            "key": 1,
+            "object": 2,
+            "val": 3,
+            "value": 4
+        }
+
+        selected = 0
+
+        import wcwidth  # voor Unicode breedte van tekens
+
+        while True:
+            stdscr.clear()
+            max_rows, max_cols = stdscr.getmaxyx()
+
+            # -------------------------------
+            # Titel tekenen (multi-line, wrapped)
+            # -------------------------------
+            start_row = 0
+            if title:
+                screen_row = 0
+                for line_render in title:
+                    col = 0
+                    for text, color_key in line_render:
+                        # check of we niet buiten scherm rijen tekenen
+                        if screen_row >= max_rows:
+                            break
+                        # crop text zodat we niet buiten scherm kolommen gaan
+                        available_space = max_cols - col
+                        if available_space <= 0:
+                            screen_row += 1
+                            col = 0
+                            available_space = max_cols
+                        # text inkorten als het te breed is
+                        display_text = text
+                        if wcwidth.wcswidth(display_text) > available_space:
+                            display_text = display_text[:available_space]
+                        stdscr.addstr(screen_row, col, display_text, curses.color_pair(self.COLOR_MAP[color_key]))
+                        col += wcwidth.wcswidth(display_text)
+
+                        # wrap als we over max_cols heen gaan
+                        while col >= max_cols:
+                            col -= max_cols
+                            screen_row += 1
+                    screen_row += 1  # volgende regel
+                start_row = screen_row + 1  # menu start onder de titel
+
+            # -------------------------------
+            # Menu tekenen
+            # -------------------------------
+            for i, choice in enumerate(choices):
+                row = start_row + i
+                if row >= max_rows:  # veilige check
+                    break
+                display_choice = choice[:max_cols]  # crop te lange keuzes
+                if i == selected:
+                    stdscr.attron(curses.A_REVERSE)
+                    stdscr.addstr(row, 0, display_choice)
+                    stdscr.attroff(curses.A_REVERSE)
+                else:
+                    stdscr.addstr(row, 0, display_choice)
+
+            # -------------------------------
+            # Input
+            # -------------------------------
+            key = stdscr.getch()
+            if key == KEY_UP and selected > 0:
+                selected -= 1
+            elif key == KEY_DOWN and selected < len(choices) - 1:
+                selected += 1
+            elif key == ord("\n"):
+                return selected + 1
+
+            stdscr.refresh()
