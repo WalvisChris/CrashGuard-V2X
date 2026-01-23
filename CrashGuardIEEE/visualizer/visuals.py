@@ -1,4 +1,4 @@
-from CrashGuardIEEE import MESSAGE, decoder
+from CrashGuardIEEE import MESSAGE, decoder, terminal
 import importlib.resources
 import pygame
 
@@ -127,17 +127,29 @@ class Simulation:
 
     def CHRIS_execute_ieee(self, mode):
         if mode == 'unsecure':
-            values, validation = decoder.get_decoded_unsecure(payload=MESSAGE)
-            return [values, validation]
+            try:
+                values, validation = decoder.get_decoded_unsecure(payload=MESSAGE)
+                return [values, validation]
+            except Exception as e:
+                terminal.text(text=f"ERROR: content type incorrect?\n{e}", color="red")
         elif mode == 'signed':
-            values, validation = decoder.get_decoded_signed(payload=MESSAGE)
-            return [values, validation]
+            try:
+                values, validation = decoder.get_decoded_signed(payload=MESSAGE)
+                return [values, validation]
+            except Exception as e:
+                terminal.text(text=f"ERROR: content type incorrect?\n{e}", color="red")
         elif mode == 'encrypted':
-            values, validation = decoder.get_decoded_encrypted(payload=MESSAGE)
-            return [values, validation]
+            try:
+                values, validation = decoder.get_decoded_encrypted(payload=MESSAGE)
+                return [values, validation]
+            except Exception as e:
+                    terminal.text(text=f"ERROR: content type incorrect?\n{e}", color="red")
         elif mode == 'enveloped':
-            values, validation = decoder.get_decoded_enveloped(payload=MESSAGE)
-            return [values, validation]
+            try:
+                values, validation = decoder.get_decoded_enveloped(payload=MESSAGE)
+                return [values, validation]
+            except Exception as e:
+                terminal.text(text=f"ERROR: content type incorrect?\n{e}", color="red")
         return None
 
     def CHRIS_send_message_instant(self, mode):
@@ -337,15 +349,15 @@ class Simulation:
         try:
             values = self.json_rapport[0]
             if len(values) > 0:
-                self.log.append("Values:")
+                self.log.append("== Values ==")
                 for value in values:
-                    self.log.append(f"{value[0]}: {value[1]}")
+                    self.log.append(f"- {value[0]}: {value[1]}")
 
             validation = self.json_rapport[1]
             if len(validation) > 0:
-                self.log.append("Validation:")
+                self.log.append("== Validation ==")
                 for item in validation:
-                    self.log.append(f"{item[0]}: {item[1]}")
+                    self.log.append(f"- {item[0]}: {item[1]}")
         except Exception as e:
             print(f"ERROR: {e}")
             
