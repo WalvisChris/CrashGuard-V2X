@@ -310,10 +310,10 @@ class Simulation:
         pygame.draw.rect(self.surface, (245, 245, 245), (10, 400, WINDOW_SIZE[0] - 20, 185))
         pygame.draw.rect(self.surface, (180, 180, 180), (10, 400, WINDOW_SIZE[0] - 20, 185), 2)
         
-        log_start_line = max(0, len(self.log) - 6 - self.log_scroll_offset)
-        for i, line in enumerate(self.log[log_start_line:log_start_line + 6]):
+        log_start_line = max(0, len(self.log) - 8 - self.log_scroll_offset)
+        for i, line in enumerate(self.log[log_start_line:log_start_line + 8]):
             t = self.font.render(line, True, (10, 10, 10))
-            self.surface.blit(t, (18, 408 + i * 28))
+            self.surface.blit(t, (18, 408 + i * 20)) # FONTSIZE
         
         if len(self.log) > 6:
             scroll_indicator = self.font.render(f"↑ {self.log_scroll_offset} older messages", True, (100, 100, 100))
@@ -351,13 +351,13 @@ class Simulation:
             if len(values) > 0:
                 self.log.append("== Values ==")
                 for value in values:
-                    self.log.append(f"- {value[0]}: {value[1]}")
+                    self.log.append(f" -   {value[0]}: {value[1]}")
 
             validation = self.json_rapport[1]
             if len(validation) > 0:
                 self.log.append("== Validation ==")
                 for item in validation:
-                    self.log.append(f"- {item[0]}: {item[1]}")
+                    self.log.append(f" -   {item[0]}: {item[1]}")
         except Exception as e:
             print(f"ERROR: {e}")
             
@@ -395,7 +395,7 @@ class Visualizer:
 
         pygame.display.set_caption('IEEE 1609.2 V2I Simulation - Secure Message Container')
         clock = pygame.time.Clock()
-        font = pygame.font.SysFont('Arial', 18)
+        font = pygame.font.SysFont('Arial', 18) # FONTSIZE
 
         settings_active = True
         dropdown = Dropdown((20, 20, 180, 36), ['unsecure', 'signed', 'encrypted', 'enveloped'], font)
