@@ -9,7 +9,7 @@ class HashedId8(univ.OctetString):
 class PreSharedKeyRecipientInfo(HashedId8):
     pass
 
-# aangepast van univ.Choice naar univ.Sequence
+# aangepast van univ.Choice naar univ.Sequence, meerdere opties mogelijk volgens IEEE 1609.2 standaard
 class RecipientInfo(univ.Sequence):
     componentType = namedtype.NamedTypes(
         namedtype.NamedType('pskRecipInfo', PreSharedKeyRecipientInfo()),
@@ -38,7 +38,7 @@ class EncryptedData(univ.Sequence):
         namedtype.NamedType('ciphertext', SymmetricCiphertext())
     )
 
-# aangepast van univ.Choice naar univ.Sequence
+# aangepast van univ.Choice naar univ.Sequence, meerdere opties mogelijk volgens IEEE 1609.2 standaard
 class Ieee1609Dot2Content(univ.Sequence):
     componentType = namedtype.NamedTypes(
         namedtype.NamedType('encryptedData', EncryptedData()),
