@@ -7,7 +7,7 @@ In deze simulatie wordt de IEEE 1609.2 standaard, als standaard voor het beveili
 - Met de **Visualizer** kun je zien hoe voertuigen in de praktijk op deze berichten reageren.  
 
 # Gebruik  
-Download de laatste release. Voor Future Mobility Networks is dit `v3.0 - FMN IEEE`. Om de simulatie te gebruiken moet het bestand `main.py` worden geopent met Python (versie 3.12.4). Na iedere actie dient `main.py` opnieuw gestart te worden. Wanneer je een actie wilt stoppen kun je `ctrl+c` klikken om het programma te stoppen.  
+Download de laatste release. Voor Future Mobility Networks is dit `v3.0 - FMN IEEE`. Eerst moeten alle libraries uit `requirements.txt` gedownload worden (pip). Om de simulatie te gebruiken moet het bestand `main.py` worden geopent met Python (versie 3.12.4). Na iedere actie dient `main.py` opnieuw gestart te worden. Wanneer je een actie wilt stoppen kun je `ctrl+c` klikken om het programma te stoppen.  
 
 # Technisch  
 De IEEE standaard definieert meerder content types. Wij simuleren de volgende:  
