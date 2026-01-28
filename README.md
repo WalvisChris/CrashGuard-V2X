@@ -20,6 +20,9 @@ De IEEE standaard definieert meerder content types. Wij simuleren de volgende:
 
 **4. enveloped data:** de signed data wordt geencrypt (AES-128 CCM, PSK).  
 
+Voor de cryptografische en hashingfuncties is gebruik gemaakt van de open source python library `cryptography`.  
+voor het maken van de ASN.1 structuren is gebruik gemaakt van de open source pyyhon library `pyasn1`.  
+
 # Meerwaarde?  
 - Door het bestuderen van deze simulatie wordt de workflow van de IEEE 1609.2 standaard helder en is te zien welke stappen nodig zijn om aan deze standaard te voldoen. Zo kom je erachter:
     - Welke **sleutels** zijn nodig?  
