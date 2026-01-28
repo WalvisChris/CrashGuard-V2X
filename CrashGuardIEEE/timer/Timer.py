@@ -1,4 +1,5 @@
 """Dit script bevat alle code voor bijhouden van een Timer voor het in- en uitpakken"""
+
 # als eerst importeren we een library om tijd te meten
 import time
 

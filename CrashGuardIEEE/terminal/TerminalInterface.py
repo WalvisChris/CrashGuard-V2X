@@ -1,3 +1,6 @@
+"""Dit is onze eigen CLI, die ervoor zorgt dat tekst en andere data mooi (in kleur) wordt gepresenteerd in de terminal/console.
+Deze code is niet relevant voor de IEEE standaard"""
+
 from typing import List
 import curses
 import os
@@ -340,9 +343,6 @@ class TerminalInterface:
             stdscr.clear()
             max_rows, max_cols = stdscr.getmaxyx()
 
-            # -------------------------------
-            # Titel tekenen (multi-line, wrapped)
-            # -------------------------------
             start_row = 0
             if title:
                 screen_row = 0
@@ -372,9 +372,6 @@ class TerminalInterface:
                     screen_row += 1  # volgende regel
                 start_row = screen_row + 1  # menu start onder de titel
 
-            # -------------------------------
-            # Menu tekenen
-            # -------------------------------
             for i, choice in enumerate(choices):
                 row = start_row + i
                 if row >= max_rows:  # veilige check
@@ -392,9 +389,6 @@ class TerminalInterface:
                 else:
                     stdscr.addstr(row, 0, display_choice)
 
-            # -------------------------------
-            # Input
-            # -------------------------------
             key = stdscr.getch()
             if key == KEY_UP and selected > 0:
                 selected -= 1

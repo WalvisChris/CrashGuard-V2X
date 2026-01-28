@@ -1,3 +1,6 @@
+"""Dit script bevat alle code voor alle testing tools van de simulatie"""
+
+# Als eerst importen we alle nodige open source libraries en alle functies en waardes van CrashGuardIEEE
 from CrashGuardIEEE import MESSAGE, terminal, createPSK, createRootCAKeys, createSenderKeys, saveMessage, saveReplay, getReplay, encoder
 from CrashGuardIEEE.timer import *
 from main import _decode
@@ -10,19 +13,23 @@ from pyasn1.codec.der.decoder import decode as decodeASN1
 from pyasn1.type import univ
 import os
 
+"""De functie 'MITM' bevat alle code voor het uitvoeren van een Man-in-the-Middle aanval.
+Bij een MITM aanval bewerkt iemand het bericht onderweg en stuurt het bewerkte bericht door naar de ontvanger"""
 def MITM():
     terminal.clear()
     if MESSAGE == None:
-        terminal.text(text="No message to manipulate!", color="red")
+        terminal.text(text="No message to manipulate!", color="red") # error als er geen bericht is om te bewerken
     else:
+        # pak de bovenste laag van het bericht uit om achter de content type te komen
         top_level, _ = decodeASN1(MESSAGE, asn1Spec=univ.Sequence())
         content_type = int(top_level[1])
 
         match content_type:
-            # UNSECURE
+            # als het content type unsecure is...
             case 0:
                 import CrashGuardIEEE.asn1.unsecure as asn1
                 decoded, _ = decodeASN1(MESSAGE, asn1Spec=asn1.Ieee1609Dot2Data())
+                # lijst met velden die aan te passen zijn
                 MANIPULATE = [
                     "< Done",
                     "protocolVersion",
@@ -32,12 +39,13 @@ def MITM():
                 manipulating = True
                 
                 while manipulating:
+                    # keuze menu voor het te manipuleren veld
                     terminal.clear()
                     title = terminal.getASN1Text(obj=decoded)                 
                     choice = terminal.menu(MANIPULATE, title)
 
                     match choice:
-                        # DONE
+                        # Done - bericht opslaan en versturen
                         case 1:
                             msg = encodeASN1(decoded)
                             saveMessage(msg)
@@ -45,15 +53,15 @@ def MITM():
                             terminal.text(text="Done manipulating message:")
                             terminal.printASN1(decoded)
                             manipulating = False
-                        # PROTOCOL VERSION
+                        # Aanpassen: Protocol Version
                         case 2:
                             protocol_version = int(terminal.input(prompt="protocol version: "))
                             decoded['protocolVersion'] = protocol_version
-                        # CONTENT TYPE
+                        # Aanpassen: Content type
                         case 3:
                             content_type = int(terminal.input(prompt="content type: "))
                             decoded['contentType'] = content_type
-                        # PAYLOAD
+                        # Aanpassen: Payload
                         case 4:
                             payload = terminal.input(prompt="payload: ")
                             payload_bytes = payload.encode('utf-8')
@@ -62,10 +70,11 @@ def MITM():
                         case _:
                             terminal.text(text=f"Invalid choice: {choice}", color="red")
 
-            # SIGNED
+            # als het content type signed is...
             case 1:
                 import CrashGuardIEEE.asn1.signed as asn1
                 decoded, _ = decodeASN1(MESSAGE, asn1Spec=asn1.Ieee1609Dot2Data())
+                # lijst met velden die aan te passen zijn
                 MANIPULATE = [
                     "< Done",
                     "protocolVersion",
@@ -81,12 +90,13 @@ def MITM():
                 manipulating = True
                 
                 while manipulating:
+                    # keuze menu voor het te manipuleren veld
                     terminal.clear()
                     title = terminal.getASN1Text(obj=decoded)                 
                     choice = terminal.menu(MANIPULATE, title)
 
                     match choice:
-                        # DONE
+                        # Done - bericht opslaan en versturen
                         case 1:
                             msg = encodeASN1(decoded)
                             saveMessage(msg)
@@ -94,32 +104,32 @@ def MITM():
                             terminal.text(text="Done manipulating message:")
                             terminal.printASN1(decoded)
                             manipulating = False
-                        # PROTOCOL VERSION
+                        # Aanpassen: Protocol Version
                         case 2:
                             terminal.clear()
                             terminal.printASN1(decoded)
                             protocol_version = int(terminal.input(prompt="protocol version: "))
                             decoded['protocolVersion'] = protocol_version
-                        # CONTENT TYPE
+                        # Aanpassen: Content type
                         case 3:
                             terminal.clear()
                             terminal.printASN1(decoded)
                             content_type = int(terminal.input(prompt="content type: "))
                             decoded['contentType'] = content_type
-                        # PAYLOAD
+                        # Aanpassen: Payload
                         case 4:
                             terminal.clear()
                             terminal.printASN1(decoded)
                             payload = terminal.input(prompt="payload: ")
                             payload_bytes = payload.encode('utf-8')
                             decoded['content']['signedData']['tbsData']['payload']['data'] = payload_bytes
-                        # PSID
+                        # Aanpassen: psid
                         case 5:
                             terminal.clear()
                             terminal.printASN1(decoded)
                             psid = int(terminal.input(prompt="psid: "))
                             decoded['content']['signedData']['tbsData']['headerInfo']['psid'] = psid
-                        # GENERATION TIME
+                        # Aanpassen: generationTime
                         case 6:
                             terminal.clear()
                             terminal.printASN1(decoded)
@@ -135,8 +145,7 @@ def MITM():
 
                             generation_time = decoded['content']['signedData']['tbsData']['headerInfo']['generationTime']
                             decoded['content']['signedData']['tbsData']['headerInfo']['generationTime'] = generation_time + change
-
-                        # EXPIRY TIME
+                        # Aanpassen: expiryTime
                         case 7:
                             terminal.clear()
                             terminal.printASN1(decoded)
@@ -152,14 +161,13 @@ def MITM():
 
                             expiry_time = decoded['content']['signedData']['tbsData']['headerInfo']['expiryTime']
                             decoded['content']['signedData']['tbsData']['headerInfo']['expiryTime'] = expiry_time + change
-
-                        # SIGNER NAME
+                        # Aanpassen: signer name
                         case 8:
                             terminal.clear()
                             terminal.printASN1(decoded)
                             name = terminal.input(prompt="name: ")
                             decoded['content']['signedData']['signer']['certificate']['toBeSignedCert']['id']['name'] = name
-                        # VALIDITY START
+                        # Aanpassen: validity start
                         case 9:
                             terminal.clear()
                             terminal.printASN1(decoded)
@@ -175,8 +183,7 @@ def MITM():
 
                             start = decoded['content']['signedData']['signer']['certificate']['toBeSignedCert']['validityPeriod']['start']
                             decoded['content']['signedData']['signer']['certificate']['toBeSignedCert']['validityPeriod']['start'] = start + change
-
-                        # VALIDITY DURATION
+                        # Aanpassen: validity duration
                         case 10:
                             terminal.clear()
                             terminal.printASN1(decoded)
@@ -192,15 +199,15 @@ def MITM():
 
                             duration = decoded['content']['signedData']['signer']['certificate']['toBeSignedCert']['validityPeriod']['duration']['hours']
                             decoded['content']['signedData']['signer']['certificate']['toBeSignedCert']['validityPeriod']['duration']['hours'] = duration + change
-
                         # Geef error bij ongeldige keuze
                         case _:
                             terminal.text(text=f"Invalid choice: {choice}", color="red")
 
-            # ENCRYPTED
+            # als het content type encrypted is...
             case 2:
                 import CrashGuardIEEE.asn1.encrypted as asn1
                 decoded, _ = decodeASN1(MESSAGE, asn1Spec=asn1.Ieee1609Dot2Data())
+                # lijst met velden die aan te passen zijn
                 MANIPULATE = [
                     "< Done",
                     "protocolVersion",
@@ -211,12 +218,13 @@ def MITM():
                 manipulating = True
                 
                 while manipulating:
+                    # keuze menu voor het te manipuleren veld
                     terminal.clear()
                     title = terminal.getASN1Text(obj=decoded)                 
                     choice = terminal.menu(MANIPULATE, title)
 
                     match choice:
-                        # DONE
+                        # Done - bericht opslaan en versturen
                         case 1:
                             msg = encodeASN1(decoded)
                             saveMessage(msg)
@@ -224,19 +232,19 @@ def MITM():
                             terminal.text(text="Done manipulating message:")
                             terminal.printASN1(decoded)
                             manipulating = False
-                        # PROTOCOL VERSION
+                        # Aanpassen: Protocol Version
                         case 2:
                             terminal.clear()
                             terminal.printASN1(decoded)
                             protocol_version = int(terminal.input(prompt="protocol version: "))
                             decoded['protocolVersion'] = protocol_version
-                        # CONTENT TYPE
+                        # Aanpassen: Content type
                         case 3:
                             terminal.clear()
                             terminal.printASN1(decoded)
                             content_type = int(terminal.input(prompt="content type: "))
                             decoded['contentType'] = content_type
-                        # PSKID
+                        # Aanpassen: PskId
                         case 4:
                             terminal.clear()
                             terminal.printASN1(decoded)
@@ -250,8 +258,7 @@ def MITM():
 
                             for i in range(a):
                                 decoded['content']['encryptedData']['recipients'][i]['pskRecipInfo'] = fake_pskId
-
-                        # NONCE
+                        # Aanpassen: Nonce
                         case 5:
                             terminal.clear()
                             terminal.printASN1(decoded)
@@ -261,10 +268,11 @@ def MITM():
                         case _:
                             terminal.text(text=f"Invalid choice: {choice}", color="red")
 
-            # ENVELOPED
+            # als het content type enveloped is...
             case 3:
                 import CrashGuardIEEE.asn1.enveloped as asn1
                 decoded, _ = decodeASN1(MESSAGE, asn1Spec=asn1.Ieee1609Dot2Data())
+                # lijst met velden die aan te passen zijn
                 MANIPULATE = [
                     "< Done",
                     "protocolVersion",
@@ -275,12 +283,13 @@ def MITM():
                 manipulating = True
                 
                 while manipulating:
+                    # keuze menu voor het te manipuleren veld
                     terminal.clear()
                     title = terminal.getASN1Text(obj=decoded)                 
                     choice = terminal.menu(MANIPULATE, title)
 
                     match choice:
-                        # DONE
+                        # Done - bericht opslaan en versturen
                         case 1:
                             msg = encodeASN1(decoded)
                             saveMessage(msg)
@@ -288,19 +297,19 @@ def MITM():
                             terminal.text(text="Done manipulating message:")
                             terminal.printASN1(decoded)
                             manipulating = False
-                        # PROTOCOL VERSION
+                        # Aanpassen: Protocol Version
                         case 2:
                             terminal.clear()
                             terminal.printASN1(decoded)
                             protocol_version = int(terminal.input(prompt="protocol version: "))
                             decoded['protocolVersion'] = protocol_version
-                        # CONTENT TYPE
+                        # Aanpassen: Content type
                         case 3:
                             terminal.clear()
                             terminal.printASN1(decoded)
                             content_type = int(terminal.input(prompt="content type: "))
                             decoded['contentType'] = content_type
-                        # PSKID
+                        # Aanpassen: PskId
                         case 4:
                             terminal.clear()
                             terminal.printASN1(decoded)
@@ -314,8 +323,7 @@ def MITM():
 
                             for i in range(a):
                                 decoded['content']['encryptedData']['recipients'][i]['pskRecipInfo'] = fake_pskId
-
-                        # NONCE
+                        # Aanpassen: Nonce
                         case 5:
                             terminal.clear()
                             terminal.printASN1(decoded)
@@ -329,43 +337,53 @@ def MITM():
             case _:
                 terminal.text(text=f"Invalid choice: {choice}", color="red")
 
+"""De functie 'Replay' bevat alle code voor het uitvoeren van een Replay aanval.
+Bij een Replay aanval wordt een oud bericht herhaald"""
 def Replay():
+    # keuze menu voor opslaan of uitpakken
     terminal.clear()
     choice = terminal.menu(["Save replay", "Decode replay"])
 
     match choice:
-        # SAVE REPLAY
+        # keuze: opslaan - huidige message wordt opgeslagen als replay
         case 1:
             saveReplay()
-        # LOAD REPLAY
+        # keuze: uitpakken - replay attack wordt ontvanger en uitgepakt
         case 2:
             _decode(message=getReplay())
         # Geef error bij ongeldige keuze
         case _:
             terminal.text(text=f"Invalid choice type: {choice}!", color="red")
 
+"""De functie 'Spoofing' bevat alle code voor het uitvoeren van een Spoofing aanval.
+Bij een Spoofing aanval doet iemand zich voor als een Pijlwagen."""
 def Spoofing():
+    # keuze menu voor het spoofen van een signed of enveloped bericht
     terminal.clear()
     choice = terminal.menu(["signed (ASN.1)", "enveloped (ASN.1)"])
     terminal.clear()
 
-    # Custom input
+    # aanvaller geeft eigen payload op
     payload = terminal.input(prompt="Payload: ")
-    if payload == "`" or payload == "": payload = "Pas op! Pijlwagen" # SHORTCUT
-    payload_bytes = payload.encode('utf-8')
+    if payload == "`" or payload == "": payload = "Pas op! Pijlwagen" # default payload als geen payload wordt opgegeven
+    payload_bytes = payload.encode('utf-8') # payload wordt omgezet naar bytes
     terminal.clear()
 
+    # aanvaller maakt eigen PSID
     terminal.text(text="Generating PSID...")
     random_byte = os.urandom(1)
     PSID = int.from_bytes(random_byte, "big")
 
+    # aanvaller maakt eigen SENDER private key en ROOT CA private key
     terminal.text(text="Generating private keys...")
     SENDER_PRIVATE_KEY = ec.generate_private_key(ec.SECP256R1())
     ROOT_CA_PRIVATE_KEY = ec.generate_private_key(ec.SECP256R1())
 
     match choice:
-        # SIGNED
+        # keuze: signed spoofing
         case 1:
+            """Het signed bericht wordt op exact dezelfde manier ingepakt als bij de Encoder,
+            alleen worden de keys van de aanvaller gebruikt in plaats van de SENDER en ROOT_CA keys"""
             import CrashGuardIEEE.asn1.signed as asn1
 
             GENERATION_TIME = int(time.time() * 1_000_000)
@@ -438,12 +456,14 @@ def Spoofing():
             final_bytes = encodeASN1(ieee_data)
             saveMessage(final_bytes)
             
-        # ENVELOPED
+        # keuze: enveloped spoofing
         case 2:
-
+            # aanvaller maakt eigen pre-shared key
             terminal.text(text="Generating PSK...")
             PSK = os.urandom(16)
 
+            """Het signed bericht wordt op exact dezelfde manier ingepakt als bij de Encoder,
+            alleen worden de keys van de aanvaller gebruikt in plaats van de PSK, SENDER en ROOT_CA keys"""
             import CrashGuardIEEE.asn1.enveloped as asn1
 
             GENERATION_TIME = int(time.time() * 1_000_000)
@@ -547,20 +567,23 @@ def Spoofing():
     
     terminal.text(text="Spoofing message opgeslagen!")
 
+"""De functie 'Keys' bevat alle code om alle sleutels aan te passen.
+Dit is niet echt een aanval maar deze functie werd veel gebruikt bij het controlleren van de validatie"""
 def Keys():
+    # keuze menu voor welke sleutels aan te passen
     terminal.clear()
     choice = terminal.menu(["Root CA Keys", "Sender Keys", "Psk (pre shared key)"])
 
     match choice:
-        # ROOT CA KEYS
+        # keuze: ROOT CA KEYS
         case 1:
             createRootCAKeys()
             terminal.text(text="Root CA Keys aangepast. Probeer nu het bericht te decoden.")
-        # SENDER KEYS
+        # keuze: SENDER KEYS
         case 2:
             createSenderKeys
             terminal.text(text="Sender Keys aangepast. Probeer nu het bericht te decoden.")
-        # PSK
+        # keuze: PSK
         case 3:
             createPSK()
             terminal.text(text="PSK aangepast. Probeer nu het bericht te decoden.")

@@ -1,7 +1,5 @@
-"""
-Dit script definieert en bevat alle code van CrashGuardIEEE
-het is de hoofd-library die verschillende waardes en functies bevat die allemaal aan te roepen zijn vanuit dit script. 
-"""
+"""Dit script definieert en bevat alle code van CrashGuardIEEE. 
+het is de hoofd-library die verschillende waardes en functies bevat die allemaal aan te roepen zijn vanuit dit script."""
 
 # Als eerst importeren we open source libraries. Deze zijn verantwoordenlijk voor o.a. de cryptografische functies
 import os
