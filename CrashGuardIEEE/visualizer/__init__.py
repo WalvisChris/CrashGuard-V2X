@@ -1,2 +1,2 @@
-# This file is necessary to make this directory a package.
+"""Dit script is toegevoegd zodat de visualisatie gebruikt kan worden vanuit de hoofd-library CrashGuardIEEE"""
 from .visuals import *

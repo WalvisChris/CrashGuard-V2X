@@ -58,7 +58,7 @@ def MITM():
                             payload = terminal.input(prompt="payload: ")
                             payload_bytes = payload.encode('utf-8')
                             decoded['content']['unsecureData'] = payload_bytes
-                        # DEFAULT
+                        # Geef error bij ongeldige keuze
                         case _:
                             terminal.text(text=f"Invalid choice: {choice}", color="red")
 
@@ -193,7 +193,7 @@ def MITM():
                             duration = decoded['content']['signedData']['signer']['certificate']['toBeSignedCert']['validityPeriod']['duration']['hours']
                             decoded['content']['signedData']['signer']['certificate']['toBeSignedCert']['validityPeriod']['duration']['hours'] = duration + change
 
-                        # DEFAULT
+                        # Geef error bij ongeldige keuze
                         case _:
                             terminal.text(text=f"Invalid choice: {choice}", color="red")
 
@@ -257,7 +257,7 @@ def MITM():
                             terminal.printASN1(decoded)
                             nonce = os.urandom(12)
                             decoded['content']['encryptedData']['ciphertext']['aes128ccm']['nonce'] = nonce
-                        # DEFFAULT
+                        # Geef error bij ongeldige keuze
                         case _:
                             terminal.text(text=f"Invalid choice: {choice}", color="red")
 
@@ -321,11 +321,11 @@ def MITM():
                             terminal.printASN1(decoded)
                             nonce = os.urandom(12)
                             decoded['content']['encryptedData']['ciphertext']['aes128ccm']['nonce'] = nonce
-                        # DEFFAULT
+                        # Geef error bij ongeldige keuze
                         case _:
                             terminal.text(text=f"Invalid choice: {choice}", color="red")
 
-            # DEFAULT
+            # Geef error bij ongeldige keuze
             case _:
                 terminal.text(text=f"Invalid choice: {choice}", color="red")
 
@@ -340,7 +340,7 @@ def Replay():
         # LOAD REPLAY
         case 2:
             _decode(message=getReplay())
-        # DEFAULT
+        # Geef error bij ongeldige keuze
         case _:
             terminal.text(text=f"Invalid choice type: {choice}!", color="red")
 
@@ -541,7 +541,7 @@ def Spoofing():
             final_bytes = encodeASN1(ieee_data)
             saveMessage(final_bytes)
 
-        # DEFAULT
+        # Geef error bij ongeldige keuze
         case _:
             terminal.text(text=f"Invalid choice type: {choice}!", color="red")
     
@@ -564,5 +564,6 @@ def Keys():
         case 3:
             createPSK()
             terminal.text(text="PSK aangepast. Probeer nu het bericht te decoden.")
+        # Geef error bij ongeldige keuze
         case _:
             terminal.text(text=f"Invalid choice type: {choice}!", color="red")
