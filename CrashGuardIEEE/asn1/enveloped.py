@@ -1,3 +1,6 @@
+"""dit script bevat alle ASN.1 definities die nodig zijn voor het opbouwen van een enveloped bericht"""
+
+# als eerst importeren we de ASN.1 standaard
 from pyasn1.type import univ, namedtype, constraint, namedval, char
 
 class SignedDataPayload(univ.Sequence):
@@ -14,6 +17,7 @@ class Uint64(univ.Integer):
 class Time64(Uint64):
     pass
 
+# HeaderInfo is aan te vullen met veel meer velden, zoals ThreeDLocation, snelweg naam, afrit...
 class HeaderInfo(univ.Sequence):
     componentType = namedtype.NamedTypes(
         namedtype.NamedType('psid', Psid()),
@@ -27,13 +31,14 @@ class ToBeSignedData(univ.Sequence):
         namedtype.NamedType('headerInfo', HeaderInfo())
     )
 
+# Deze class hebben wij zelf toegevoegd
 class UncompressedP256(univ.Sequence):
     componentType = namedtype.NamedTypes(
         namedtype.NamedType('x', univ.OctetString()),
         namedtype.NamedType('y', univ.OctetString())
     )
 
-# CHOICE > SEQUENCE
+# aangepast van univ.Choice naar univ.Sequence, meerdere opties mogelijk volgens IEEE 1609.2 standaard
 class EccP256CurvePoint(univ.Sequence):
     componentType = namedtype.NamedTypes(
         namedtype.NamedType('uncompressed', UncompressedP256())
@@ -67,7 +72,7 @@ class Uint32(univ.Integer):
 class Time32(Uint32):
     pass
 
-# CHOICE > SEQUENCE
+# aangepast van univ.Choice naar univ.Sequence, meerdere opties mogelijk volgens IEEE 1609.2 standaard
 class Duration(univ.Sequence):
     componentType = namedtype.NamedTypes(
         namedtype.NamedType('hours', Uint16())
@@ -79,6 +84,7 @@ class ValidityPeriod(univ.Sequence):
         namedtype.NamedType('duration', Duration())
     )
 
+# ToBeSignecCertificate is aante vullen met nog veel meer velden die de IEEE 1609.2 standaard definieerd
 class ToBeSignedCertificate(univ.Sequence):
     componentType = namedtype.NamedTypes(
         namedtype.NamedType('id', CertificateId()),
@@ -91,6 +97,7 @@ class ToBeSignedCertificate(univ.Sequence):
 class Uint8(univ.Integer):
     subtypeSpec = constraint.ValueRangeConstraint(0, 255)
 
+# Wij maken bij de simulatie alleen gebruik van Explicit Certificates
 class CertificateType(univ.Enumerated):
     namedValues = namedval.NamedValues(
         ('explicit', 0),
@@ -105,7 +112,7 @@ class IssuerIdentifier(univ.Sequence):
         namedtype.NamedType('sha256AndDigest', HashedId8())
     )
 
-# CUSTOM CERTIFICATE CLASS (EXPLICIT)
+# Deze class hebben wij zelf toegevoegd
 class Certificate(univ.Sequence):
     componentType = namedtype.NamedTypes(
         namedtype.NamedType('version', Uint8()),
@@ -115,7 +122,7 @@ class Certificate(univ.Sequence):
         namedtype.NamedType('signature', univ.Any())
     )
 
-# CHOICE > SEQUENCE
+# aangepast van univ.Choice naar univ.Sequence, meerdere opties mogelijk volgens IEEE 1609.2 standaard
 class SignerIdentifier(univ.Sequence):
     componentType = namedtype.NamedTypes(
         namedtype.NamedType('certificate', Certificate())
@@ -127,12 +134,13 @@ class EcdsaP256Signature(univ.Sequence):
         namedtype.NamedType('s', univ.OctetString(subtypeSpec=constraint.ValueSizeConstraint(32, 32)))
     )
 
-# CHOICE > SEQUENCE
+# aangepast van univ.Choice naar univ.Sequence, meerdere opties mogelijk volgens IEEE 1609.2 standaard
 class Signature(univ.Sequence):
     componentType = namedtype.NamedTypes(
         namedtype.NamedType('ecdsaNistP256Signature', EcdsaP256Signature())
     )
 
+# Koppelt getallen aan algoritmes, meerdere algoritmes zijn toe te voegen
 class HashAlgorithm(univ.Enumerated):
     namedValues = namedval.NamedValues(
         ('sha256', 0),
@@ -165,7 +173,7 @@ class SymmetricCiphertext(univ.Sequence):
 class PreSharedKeyRecipientInfo(HashedId8):
     pass
 
-# CHOICE > SEQUENCE
+# aangepast van univ.Choice naar univ.Sequence
 class RecipientInfo(univ.Sequence):
     componentType = namedtype.NamedTypes(
         namedtype.NamedType('pskRecipInfo', PreSharedKeyRecipientInfo()),
@@ -186,7 +194,7 @@ class EncryptedData(univ.Sequence):
         namedtype.NamedType('ciphertext', SymmetricCiphertext())
     )
 
-# CHOICE > SEQUENCE
+# aangepast van univ.Choice naar univ.Sequence
 class Ieee1609Dot2Content(univ.Sequence):
     componentType = namedtype.NamedTypes(
         namedtype.NamedType('encryptedData', EncryptedData()),

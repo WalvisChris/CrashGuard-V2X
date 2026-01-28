@@ -1,3 +1,6 @@
+"""dit script bevat alle ASN.1 definities die nodig zijn voor het opbouwen van een unsecure bericht"""
+
+# als eerst importeren we de ASN.1 standaard
 from pyasn1.type import univ, namedtype, constraint, namedval
 
 class Opaque(univ.OctetString):
